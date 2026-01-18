@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import { loginSchema } from "@edustream/types";
 import { authApi } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import Navbar from "@/components/Navbar";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,22 +59,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      {/* Header */}
-      <header className="bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/EduStreamLogo.png"
-              alt="EduStream Logo"
-              width={140}
-              height={40}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
-          
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
