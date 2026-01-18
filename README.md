@@ -1,135 +1,86 @@
-# Turborepo starter
+## 1 Problem Statement
 
-This Turborepo starter is maintained by the Turborepo core team.
+Existing video conferencing tools such as Zoom, Google Meet, and Microsoft Teams are
+primarily designed for corporate communication rather than educational use. As a result,
+they lack several features that are essential for an effective virtual classroom environment.
 
-## Using this example
+Key Issues:
 
-Run the following command:
+- Lack of Classroom Control: Traditional platforms do not provide strict teacher–student
+    hierarchies such as forced mute, selective chat control, or preventing students from
+    interrupting the class.
+- Bloat & Complexity: Many tools require installation, heavy system resources,
+    or contain unnecessary features that can distract students.
+- Cost Barriers: Important features—meeting duration, cloud recording, atten-
+    dance logs—often require premium subscriptions that many institutions cannot
+    afford.
+- Latency Issues: Centralized servers can introduce lag, especially in regions with
+    unstable internet connectivity.
 
-```sh
-npx create-turbo@latest
-```
+## 2 Potential Solution
 
-## What's inside??
+EduStream provides a lightweight, browser-based virtual classroom platform designed
+exclusively for teachers and students.
 
-This Turborepo includes the following packages/apps:
+Solution Highlights:
 
-### Apps and Packages
+- Browser Native: Runs completely on the web using WebRTC, no installation
+    needed.
+- Peer-to-Peer Mesh: Reduces server cost and improves latency for small/medium
+    classrooms.
+- Strict Role Management: Distinct permissions for Teacher (Host) and Students
+    (Peers) to ensure discipline and control
+- Optimized UI: Minimal, distraction-free interface built for educational use.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## 3 Key Features of the Project
 
-### Utilities
+## Key Features
 
-This Turborepo has some additional tools already setup for you:
+1. Virtual Classroom Creation (Teacher)
+    - The teacher can generate a unique, random Room-ID or generate link.
+    - The teacher enters the lobby automatically as the ”Host” with administrative
+       privileges.
+2. Student Joining Mechanism
+    - Students enter the Room-ID and their Name to join.
+    - No account creation is mandatory for students (reducing friction), but they
+       wait in a ”Waiting Room” until approved by the teacher.
+3. Real-Time Audio/Video Communication
+    - Users can stream video and audio with toggle controls (Mute/Unmute, Video
+       On/Off).
+    - Active Speaker detection highlights the person currently talking.
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## Additional Features
 
-### Build
+4. Interactive Whiteboard
+    - A collaborative canvas where the teacher can draw diagrams or solve math
+       problems.
+    - Changes are synchronized instantly to all students’ screens.
+5. Raise Hand Feature
+    - A student can click a button to digitally ”raise their hand.”
+    - The teacher receives a notification toast and sees a visual indicator on the
+       student’s video feed.
+6. Classroom Management (Host Only)
+    - Mute All: Teacher can mute every student at once.
+    - Remove Participant: Teacher can kick a disruptive student from the session.
 
-To build all apps and packages, run the following command:
 
-```
-cd my-turborepo
+## 4 Tools and Technology
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+Frontend (The View Layer):
+Next, React, TailwindCSS
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+Backend (The Signaling & API Layer):
+Runtime: Node.js
+Framework: Express.js – To handle REST API routes and serve the WebSocket server.
+Signaling: Socket.io – To handle the handshake messages (SDP offers/answers) and real-
+time events (chat, raise hand).
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Core Communication Protocol:
+Media Transport: WebRTC (Native Browser API) – For peer-to-peer video/audio stream-
+ing.
+NAT Traversal: STUN Server (Google Public STUN) – To allow connection through
+firewalls.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+Database:
+MongoDB – To store user credentials or persistent chat logs if required.
