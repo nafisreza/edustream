@@ -9,15 +9,3 @@ export const apiClient = axios.create({
   },
   withCredentials: true, // Automatically send cookies
 });
-
-// Response interceptor to handle 401 redirects
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
