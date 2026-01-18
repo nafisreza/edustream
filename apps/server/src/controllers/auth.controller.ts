@@ -44,9 +44,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
 
+      // Set httpOnly cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
       res.status(201).json({
         message: 'User registered successfully',
-        token,
         user: {
           id: user._id,
           name: user.name,
@@ -92,9 +99,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
 
+      // Set httpOnly cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
       res.status(200).json({
         message: 'Login successful',
-        token,
         user: {
           id: user._id,
           name: user.name,
@@ -135,5 +149,22 @@ export const verifyToken = async (req: AuthenticatedRequest, res: Response): Pro
   } catch (error) {
     console.error('Token verification error:', error);
     res.status(500).json({ message: 'Server error during token verification' });
+  }
+};
+
+// Logout user
+export const logout = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Clear the authToken cookie
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    res.status(200).json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Server error during logout' });
   }
 };
