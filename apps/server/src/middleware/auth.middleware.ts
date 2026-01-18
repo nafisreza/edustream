@@ -18,15 +18,13 @@ export const authenticate = (
   next: NextFunction
 ): void => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
+    // Get token from cookie
+    const token = req.cookies.authToken;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       res.status(401).json({ message: 'No token provided' });
       return;
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET) as {
