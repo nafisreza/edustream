@@ -1,7 +1,81 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { registerSchema } from "@edustream/types";
+import { authApi } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { setUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "student" as "teacher" | "student",
+    agreeToTerms: false,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (!formData.agreeToTerms) {
+      toast.error("Please agree to the Terms of Service and Privacy Policy");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Validate with Zod
+      const validatedData = registerSchema.parse({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+
+      // Call API (cookie is set automatically by backend)
+      const response = await authApi.register(validatedData);
+
+      // Update user in context
+      setUser(response.user);
+
+      toast.success("Account created successfully!");
+      router.push("/create");
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        const firstError = error.errors[0];
+        toast.error(firstError.message);
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("Failed to create account. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
@@ -32,7 +106,7 @@ export default function SignupPage() {
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
-            <form className="space-y-6" action="#" method="POST">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Google Sign Up Button */}
               <button
                 type="button"
@@ -74,6 +148,26 @@ export default function SignupPage() {
                 </div>
               </div>
 
+              {/* Role Selection */}
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  I am a
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
+                >
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                </select>
+              </div>
+
               {/* Name Input */}
               <div>
                 <label
@@ -88,6 +182,8 @@ export default function SignupPage() {
                   type="text"
                   autoComplete="name"
                   required
+                  value={formData.name}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Enter your full name"
                 />
@@ -107,6 +203,8 @@ export default function SignupPage() {
                   type="email"
                   autoComplete="email"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Enter your email"
                 />
@@ -126,6 +224,8 @@ export default function SignupPage() {
                   type="password"
                   autoComplete="new-password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Create a password"
                 />
@@ -148,6 +248,8 @@ export default function SignupPage() {
                   type="password"
                   autoComplete="new-password"
                   required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Confirm your password"
                 />
@@ -156,13 +258,15 @@ export default function SignupPage() {
               {/* Terms and Conditions */}
               <div className="flex items-start">
                 <input
-                  id="terms"
-                  name="terms"
+                  id="agreeToTerms"
+                  name="agreeToTerms"
                   type="checkbox"
                   required
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
                   className="h-4 w-4 rounded border-gray-300 text-[#6B46C1] focus:ring-[#6B46C1]"
                 />
-                <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
+                <label htmlFor="agreeToTerms" className="ml-2 text-sm text-gray-600">
                   I agree to the{" "}
                   <Link
                     href="/terms"
@@ -183,9 +287,10 @@ export default function SignupPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full rounded-lg bg-[#6B46C1] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5B21B6] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
+                disabled={isLoading}
+                className="w-full rounded-lg bg-[#6B46C1] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5B21B6] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Sign Up
+                {isLoading ? "Creating Account..." : "Sign Up"}
               </button>
             </form>
 
