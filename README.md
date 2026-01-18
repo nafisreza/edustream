@@ -1,4 +1,4 @@
-## 1 Problem Statement
+## Problem Statement
 
 Existing video conferencing tools such as Zoom, Google Meet, and Microsoft Teams are
 primarily designed for corporate communication rather than educational use. As a result,
@@ -17,7 +17,7 @@ Key Issues:
 - Latency Issues: Centralized servers can introduce lag, especially in regions with
     unstable internet connectivity.
 
-## 2 Potential Solution
+## Solution
 
 EduStream provides a lightweight, browser-based virtual classroom platform designed
 exclusively for teachers and students.
@@ -31,9 +31,6 @@ Solution Highlights:
 - Strict Role Management: Distinct permissions for Teacher (Host) and Students
     (Peers) to ensure discipline and control
 - Optimized UI: Minimal, distraction-free interface built for educational use.
-
-
-## 3 Key Features of the Project
 
 ## Key Features
 
@@ -65,7 +62,7 @@ Solution Highlights:
     - Remove Participant: Teacher can kick a disruptive student from the session.
 
 
-## 4 Tools and Technology
+## Tools and Technology
 
 Frontend (The View Layer):
 Next, React, TailwindCSS
