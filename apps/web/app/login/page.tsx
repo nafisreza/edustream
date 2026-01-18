@@ -1,7 +1,61 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { loginSchema } from "@edustream/types";
+import { authApi } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { setUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Validate with Zod
+      const validatedData = loginSchema.parse(formData);
+
+      // Call API (cookie is set automatically by backend)
+      const response = await authApi.login(validatedData);
+
+      // Update user in context
+      setUser(response.user);
+
+      toast.success("Logged in successfully!");
+      router.push("/create");
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        const firstError = error.errors[0];
+        toast.error(firstError.message);
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("Failed to log in. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
@@ -32,7 +86,7 @@ export default function LoginPage() {
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
-            <form className="space-y-6" action="#" method="POST">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Google Sign In Button */}
               <button
                 type="button"
@@ -88,6 +142,8 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Enter your email"
                 />
@@ -107,6 +163,8 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
                   placeholder="Enter your password"
                 />
@@ -125,9 +183,10 @@ export default function LoginPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full rounded-lg bg-[#6B46C1] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5B21B6] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2"
+                disabled={isLoading}
+                className="w-full rounded-lg bg-[#6B46C1] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5B21B6] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Log In
+                {isLoading ? "Logging In..." : "Log In"}
               </button>
             </form>
 
