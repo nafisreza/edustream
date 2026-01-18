@@ -1,54 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      {/* Header */}
-      <header className="bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/EduStreamLogo.png"
-              alt="EduStream Logo"
-              width={140}
-              height={40}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
-          <div className="flex items-center gap-8">
-            <nav className="hidden md:flex items-center gap-6">
-              <Link
-                href="#features"
-                className="text-sm font-medium text-black transition-colors hover:text-[#6B46C1]"
-              >
-                Our Features
-              </Link>
-              <Link
-                href="#support"
-                className="text-sm font-medium text-black transition-colors hover:text-[#6B46C1]"
-              >
-                Support
-              </Link>
-            </nav>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="rounded-lg bg-[#6B46C1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5B21B6]"
-              >
-                Log In
-              </Link>
-              <Link
-                href="/signup"
-                className="rounded-lg bg-[#8B5CF6] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#7C3AED]"
-              >
-                Sign Up
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero Section */}
       <main className="flex-1">
