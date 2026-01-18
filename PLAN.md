@@ -38,7 +38,7 @@ Install in [apps/server/package.json](apps/server/package.json):
 - Configure development/production modes
 
 ### Step 1.4: Set Up MongoDB Database
-- Create MongoDB Atlas account or local MongoDB instance
+- Create MongoDB with local docker setup
 - Design schemas in [apps/server/src/models](apps/server/src/models):
   - User schema (name, email, password, role, createdAt)
   - Room schema (roomId, hostId, participants, isActive, createdAt)
@@ -71,23 +71,29 @@ Install in [apps/server/package.json](apps/server/package.json):
 ### Step 2.1: Install WebRTC Dependencies
 Frontend ([apps/web](apps/web)):
 - socket.io-client (real-time communication)
-- simple-peer or peerjs (WebRTC abstraction)
+- **LiveKit** (Recommended for faster development)
+  - livekit-client (frontend)
+  - livekit-server-sdk (backend)
 
 ### Step 2.2: Configure STUN/TURN Servers
 - Add Google's public STUN server: stun:stun.l.google.com:19302
 - Configure in environment variables
 - Create ICE servers configuration object
 
-### Step 2.3: Build Signaling Server (Socket.io)
-In [apps/server/src/sockets](apps/server/src/sockets):
-- Create socket event handlers for:
-  - `join-room`: User joins a room
-  - `offer`: Send WebRTC offer
-  - `answer`: Send WebRTC answer
-  - `ice-candidate`: Exchange ICE candidates
-  - `leave-room`: User disconnects
-- Maintain room state: Map<roomId, Set<socketId>>
-- Broadcast events to room participants
+### Step 2.3: Build SFU Server Architecture
+
+**If using LiveKit:**
+- Install LiveKit server (Docker)
+- Configure LiveKit server with API key and secret
+- Create access tokens for room participants
+- Backend generates tokens with room permissions (publish/subscribe)
+- Frontend connects to LiveKit room using token
+
+**Benefits of SFU over Mesh:**
+- Supports 50+ participants (vs ~10 in mesh)
+- Lower client CPU usage (upload once, server distributes)
+- Better bandwidth management
+- Simulcast support (multiple quality layers)
 
 ### Step 2.4: Create Room API Endpoints
 - POST /api/rooms/create: Generate unique room ID, save to database
@@ -123,9 +129,11 @@ In [apps/server/src/sockets](apps/server/src/sockets):
 
 ### Step 3.1: Create WebRTC Context Provider
 - Create [apps/web/contexts/WebRTCContext.tsx](apps/web/contexts/WebRTCContext.tsx)
-- Manage peer connections state: Map<userId, RTCPeerConnection>
+- Initialize LiveKit Room
+- Manage participant tracks: Map<userId, RemoteTrack[]>
 - Store local media stream (camera/microphone)
-- Provide functions: toggleMute, toggleVideo, createPeerConnection
+- Provide functions: toggleMute, toggleVideo, publishTrack, unpublishTrack
+- Handle room events: participant joined/left, track subscribed/unsubscribed
 
 ### Step 3.2: Request Camera/Microphone Access
 - Use navigator.mediaDevices.getUserMedia() API
@@ -134,12 +142,42 @@ In [apps/server/src/sockets](apps/server/src/sockets):
 - Store local stream in context
 - Display local video preview
 
-### Step 3.3: Implement Peer Connection Logic
-- On room join, establish connections with existing participants
-- Create RTCPeerConnection for each peer
-- Add local stream tracks to peer connection
-- Listen for remote stream tracks
-- Handle ICE candidate generation and exchange
+### Step 3.3: Implement Media Publishing & Subscription Logic
+
+**LiveKit:**
+- Connect to LiveKit room with access token
+- Publish local camera/microphone tracks
+- Subscribe to remote participant tracks automatically
+- LiveKit handles all WebRTC negotiation internally
+
+**Critical: Implement Track Renegotiation**
+- When a student **turns camera off**: Unpublish the video track (don't just mute)
+- When **turning camera back on**: 
+  1. Acquire new media stream with getUserMedia()
+  2. Create new video track
+  3. Publish new track (triggers new offer/answer negotiation)
+  4. Update local video preview
+- **Why this matters**: Simply enabling/disabling tracks can cause black screens because the WebRTC connection isn't properly renegotiated
+- Same applies to microphone and screen sharing
+- Track replacement flow:
+  ```javascript
+  // Unpublish old track
+  await room.localParticipant.unpublishTrack(oldVideoTrack);
+  oldVideoTrack.stop();
+  
+  // Get new media
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  const newTrack = stream.getVideoTracks()[0];
+  
+  // Publish new track (renegotiates connection)
+  await room.localParticipant.publishTrack(newTrack);
+  ```
+
+**Error Handling:**
+- Monitor track mute/unmute events
+- Detect "black screen" scenarios (track ended unexpectedly)
+- Auto-retry track publication on failure
+- Show user-friendly error messages
 
 ### Step 3.4: Build Video Grid Component
 - Create [apps/web/components/VideoGrid.tsx](apps/web/components/VideoGrid.tsx)
@@ -269,11 +307,52 @@ Recommendation: tldraw or Fabric.js for speed
 - Configure toast position and duration
 
 ### Step 6.3: Add Screen Sharing
-- Use navigator.mediaDevices.getDisplayMedia()
-- Create "Share Screen" button
-- Replace video track with screen track
-- Broadcast screen to all participants
-- Add "Stop Sharing" button
+
+**Implementation:**
+- Use navigator.mediaDevices.getDisplayMedia() to capture screen
+- Create "Share Screen" button in MediaControls
+- Add "Stop Sharing" button that appears during sharing
+
+**Critical: Screen Share is a Separate Stream**
+- ⚠️ `getDisplayMedia()` creates a **new MediaStream**, NOT a track from your existing camera stream
+- **Two approaches to handle this:**
+
+**Approach 1: Replace Video Track (Recommended for simplicity)**
+```javascript
+// Stop camera, publish screen instead
+await room.localParticipant.unpublishTrack(cameraTrack);
+const screenStream = await navigator.mediaDevices.getDisplayMedia();
+const screenTrack = screenStream.getVideoTracks()[0];
+await room.localParticipant.publishTrack(screenTrack);
+
+// When stopping: switch back to camera
+await room.localParticipant.unpublishTrack(screenTrack);
+const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+const newCameraTrack = cameraStream.getVideoTracks()[0];
+await room.localParticipant.publishTrack(newCameraTrack);
+```
+
+**Approach 2: Publish Additional Track (Better UX)**
+- Publish screen share as a **second video track** alongside camera
+- Participants see both your face AND your screen
+- Display screen in larger tile, camera in small picture-in-picture
+- LiveKit supports multiple tracks per participant
+- UI shows two video tiles for the screen sharer
+
+**Handle Screen Share Ended Event:**
+```javascript
+screenTrack.addEventListener('ended', () => {
+  // User clicked "Stop Sharing" in browser UI
+  // Clean up and revert to camera
+  handleStopScreenShare();
+});
+```
+
+**UI Considerations:**
+- Show "Screen" badge on video tile during sharing
+- Enlarge screen share tile (main view)
+- Minimize other participants (side bar)
+- Teacher can share screen even if camera is off
 
 ### Step 6.4: Implement Connection Quality Indicator
 - Monitor RTCPeerConnection.getStats()
@@ -405,20 +484,24 @@ Connect to deployed backend API
 - **Multi-language Support**: i18n
 
 ### Scalability Improvements
-- **SFU (Selective Forwarding Unit)**: Replace mesh with MediaSoup for 50+ participants
-- **Redis**: Session storage and pub/sub
-- **Load Balancer**: Distribute Socket.io connections
+- **Already using SFU**: LiveKit/mediasoup supports 50+ participants
+- **Horizontal Scaling**: Deploy multiple LiveKit servers with load balancing
+- **Redis**: Session storage, room state, and pub/sub for multi-server setups
+- **Simulcast**: Multiple quality layers for adaptive streaming
+- **Regional Servers**: Deploy LiveKit in multiple regions for lower latency
 - **CDN**: Serve static assets globally
+- **Recording Workers**: Separate servers for session recording
 
 ---
 
 ## Key Technical Challenges
 
-1. **WebRTC Peer Connections**: Most complex part, requires understanding of SDP, ICE, STUN/TURN
-2. **Signaling Architecture**: Coordinating Socket.io events between server and clients
+1. **SFU Server Setup**: Configuring LiveKit/mediasoup server infrastructure correctly
+2. **Track Renegotiation**: Properly handling camera/mic on/off cycles to prevent black screens
 3. **State Synchronization**: Keeping room state consistent across all clients
-4. **NAT Traversal**: Some networks may require TURN server (additional cost)
-5. **Scalability**: Mesh topology limits to ~10 participants, need SFU for larger rooms
+4. **NAT Traversal**: Some networks may require TURN server (LiveKit includes this, mediasoup requires setup)
+5. **Scalability**: SFU architecture supports 50+ participants, but requires proper server resources
+6. **Screen Share Stream Management**: Handling multiple video tracks per participant correctly
 
 ---
 
@@ -438,3 +521,16 @@ Start with this sequence for fastest path to working prototype:
 Skip optional features initially: OAuth, chat, screen sharing, advanced analytics.
 
 ---
+
+## Final Notes
+
+- **Priority**: Focus on SFU setup (Phase 2) and WebRTC implementation (Phase 3) first
+- **SFU Architecture**: Using LiveKit enables 50+ participant rooms with better performance
+- **LiveKit vs mediasoup**:
+  - **LiveKit**: Faster development, managed cloud option, built-in TURN servers, better documentation
+  - **mediasoup**: More control, self-hosted only, steeper learning curve, more flexibility
+- **Track Renegotiation**: This is critical! Always unpublish/republish tracks when toggling camera/mic, not just enable/disable
+- **Screen Sharing**: Remember it's a separate stream - plan your UI for multiple video tracks
+- **Browser Support**: Chrome/Edge recommended, Safari has WebRTC quirks
+- **Testing**: Test camera on/off cycles extensively, test with real network conditions and multiple devices
+- **Server Resources**: SFU requires more backend resources than mesh, plan accordingly (2-4GB RAM minimum)
