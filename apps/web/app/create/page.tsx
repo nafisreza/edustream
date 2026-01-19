@@ -1,39 +1,106 @@
+'use client';
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { createRoomSchema } from "@edustream/types";
+import { roomApi } from "@/lib/room";
+import { useAuth } from "@/contexts/AuthContext";
+import Navbar from "@/components/Navbar";
+
 export default function CreatePage() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast.error("Please login to create a room");
+      router.push("/login");
+    }
+  }, [user, isLoading, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+
+    try {
+      const validatedData = createRoomSchema.parse(formData);
+      const response = await roomApi.createRoom(validatedData);
+      
+      toast.success("Room created successfully!");
+      router.push(`/room/${response.room.roomId}`);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        toast.error(error.errors[0].message);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to create room");
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-8 p-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Create Room</h1>
-          <p className="mt-2 text-muted-foreground">
-            Start a new educational streaming session
-          </p>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="roomName" className="block text-sm font-medium">
-              Room Name
-            </label>
-            <input
-              id="roomName"
-              type="text"
-              placeholder="Enter room name"
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <Navbar />
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-sm border">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Create Room</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Start a new educational streaming session
+            </p>
           </div>
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium">
-              Description (Optional)
-            </label>
-            <textarea
-              id="description"
-              placeholder="Enter room description"
-              rows={4}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <button className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            Create Room
-          </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Room Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter room name"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1]"
+              />
+            </div>
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description (Optional)
+              </label>
+              <textarea
+                id="description"
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter room description"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#6B46C1] focus:outline-none focus:ring-2 focus:ring-[#6B46C1]"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="w-full rounded-lg bg-[#6B46C1] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5B21B6] focus:outline-none focus:ring-2 focus:ring-[#6B46C1] disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isCreating ? "Creating Room..." : "Create Room"}
+            </button>
+          </form>
         </div>
       </div>
     </div>
