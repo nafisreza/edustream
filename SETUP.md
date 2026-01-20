@@ -45,7 +45,21 @@ docker ps
 
 You should see `edustream-mongo` in the list.
 
-### 4. Configure Environment Variables
+### 4. Build Shared Packages
+
+The types package needs to be built before running the app:
+```bash
+npx turbo build
+```
+
+Or build just the types package:
+```bash
+cd packages/types
+npm run build
+cd ../..
+```
+
+### 5. Configure Environment Variables
 
 **Backend (.env):**
 Navigate to `apps/server/` and create a `.env` file (or copy from `.env.example`):
@@ -72,7 +86,7 @@ Create `.env.local` with:
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-### 5. Run the Application
+### 6. Run the Application
 
 From the root directory:
 ```bash
@@ -83,19 +97,19 @@ This will start:
 - Frontend on http://localhost:3000
 - Backend on http://localhost:5000
 
-### 6. Stop MongoDB (when needed)
+### 7. Stop MongoDB (when needed)
 
 ```bash
 docker stop edustream-mongo
 ```
 
-### 7. Start MongoDB again
+### 8. Start MongoDB again
 
 ```bash
 docker start edustream-mongo
 ```
 
-### 8. Remove MongoDB container (if needed)
+### 9. Remove MongoDB container (if needed)
 
 ```bash
 docker stop edustream-mongo
