@@ -80,4 +80,4 @@ NAT Traversal: STUN Server (Google Public STUN) – To allow connection through
 firewalls.
 
 Database:
-MongoDB – To store user credentials or persistent chat logs if required.
+MongoDB – To store user credentials or persistent chat logs if required
