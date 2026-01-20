@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
+import ServicesCarousel from "@/components/ServicesCarousel";
 
 export default function Home() {
   return (
@@ -9,14 +10,18 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="flex-1">
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
+        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="space-y-8">
+            <div className="space-y-6">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
                 <span className="text-black">Where teaching meets</span>
                 <br />
                 <span className="text-[#6B46C1]">seamless connection</span>
               </h1>
+              <p className="mx-auto max-w-3xl text-lg text-gray-600 sm:text-xl leading-relaxed">
+                EduStream brings teachers and students together in real time with smooth video streaming,
+                classroom controls, and a clean interface built for effective online learning.
+              </p>
               <div className="flex justify-center">
                 <Link
                   href="/signup"
@@ -30,95 +35,14 @@ export default function Home() {
         </section>
 
         {/* Services Section */}
-        <section id="features" className="py-16 sm:py-20 lg:py-24 bg-white">
+        <section id="features" className="pt-2 sm:pt-4 lg:pt-6 pb-6 sm:pb-8 lg:pb-10 bg-white relative">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-black">
               Services we offer
             </h2>
-            
-            {/* Scrollable Cards Container */}
-            <div className="relative">
-              <div className="overflow-x-auto scrollbar-hide pb-4">
-                <div className="flex gap-6 min-w-max px-2">
-                  {/* Calls Card */}
-                  <div className="flex-shrink-0 w-[320px] sm:w-[400px] rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 to-purple-800 relative">
-                    <div className="absolute top-4 left-4 z-10">
-                      <h3 className="text-3xl font-bold text-white">Calls</h3>
-                    </div>
-                    <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center">
-                      <div className="text-center text-gray-500 p-8">
-                        <div className="mb-4">
-                          <div className="grid grid-cols-3 gap-2 mb-4">
-                            {Array.from({ length: 9 }).map((_, i) => (
-                              <div
-                                key={i}
-                                className="aspect-square bg-purple-300 rounded-lg"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm">Video conference interface</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Whiteboard Card with Content */}
-                  <div className="flex-shrink-0 w-[320px] sm:w-[400px] rounded-2xl overflow-hidden bg-gradient-to-br from-purple-500 to-purple-700 relative">
-                    <div className="absolute top-4 left-4 z-10">
-                      <h3 className="text-3xl font-bold text-white">Whiteboard</h3>
-                    </div>
-                    <div className="aspect-[4/3] bg-blue-50 flex items-center justify-center">
-                      <div className="text-center text-gray-500 p-8">
-                        <div className="space-y-4">
-                          <div className="bg-white rounded-lg p-4 shadow-sm">
-                            <p className="text-sm font-semibold mb-2">Product Launch Tasks</p>
-                            <div className="space-y-1 text-left">
-                              <div className="flex items-center gap-2">
-                                <span className="text-green-500">✓</span>
-                                <span className="text-sm">Update progress</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-300">□</span>
-                                <span className="text-sm">Create roadmap</span>
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-sm">Interactive whiteboard interface</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Placeholder Whiteboard Cards */}
-                  {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="flex-shrink-0 w-[320px] sm:w-[400px] rounded-2xl overflow-hidden bg-gradient-to-br from-purple-400 to-white relative"
-                    >
-                      <div className="absolute top-4 left-4 z-10">
-                        <h3 className="text-3xl font-bold text-white">Whiteboard</h3>
-                      </div>
-                      <div className="aspect-[4/3] bg-gradient-to-br from-purple-200 to-white" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Navigation Dots */}
-              <div className="flex justify-center gap-2 mt-6">
-                {[1, 2, 3, 4, 5].map((dot, index) => (
-                  <button
-                    key={dot}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === 2
-                        ? "bg-[#6B46C1]"
-                        : "bg-white border-2 border-gray-300"
-                    }`}
-                    aria-label={`Go to slide ${dot}`}
-                  />
-                ))}
-              </div>
-            </div>
+          </div>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <ServicesCarousel />
           </div>
         </section>
       </main>
