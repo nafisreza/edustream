@@ -136,8 +136,8 @@ export default function ServicesCarousel() {
             onClick={() => scrollToIndex(index)}
             className={`w-2 h-2 rounded-full transition-colors ${
               index === activeIndex
-                ? "bg-[#6B46C1]"
-                : "bg-white border-2 border-gray-300 hover:border-[#6B46C1]"
+                ? "bg-white"
+                : "bg-white/50 border-2 border-white/70 hover:border-white"
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />

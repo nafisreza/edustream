@@ -22,16 +22,17 @@ export default function Navbar() {
   };
 
   return (
-    <header className="bg-white border-b">
+    <header className="bg-transparent border-b border-white/20">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center">
           <Image
-            src="/EduStreamLogo.png"
+            src="/EduStreamLogo.png?v=2"
             alt="EduStream Logo"
             width={140}
             height={40}
             className="h-8 w-auto"
             priority
+            unoptimized
           />
         </Link>
 
@@ -40,7 +41,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/profile"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
               >
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">{user.name}</span>
@@ -57,13 +58,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="rounded-lg bg-[#6B46C1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5B21B6]"
+                className="rounded-lg bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/30 border border-white/30"
               >
                 Log In
               </Link>
               <Link
                 href="/signup"
-                className="rounded-lg bg-[#8B5CF6] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#7C3AED]"
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-[#6B46C1] transition-colors hover:bg-gray-50"
               >
                 Sign Up
               </Link>
