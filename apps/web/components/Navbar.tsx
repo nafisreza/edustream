@@ -28,9 +28,9 @@ export default function Navbar() {
           <Image
             src="/EduStreamLogo.png?v=2"
             alt="EduStream Logo"
-            width={140}
-            height={40}
-            className="h-8 w-auto"
+            width={100}
+            height={30}
+            className="h-7 w-auto"
             priority
             unoptimized
           />
