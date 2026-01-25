@@ -29,6 +29,11 @@ export default function ServicesCarousel() {
       image: "/recap.webp",
       alt: "Recap",
     },
+    {
+      name: "Chat",
+      image: "/chat.png",
+      alt: "Chat",
+    },
   ];
 
   const scroll = (direction: "left" | "right") => {
@@ -79,7 +84,7 @@ export default function ServicesCarousel() {
   }, [services.length]);
 
   return (
-    <div className="relative">
+    <div className="relative overflow-visible">
       {/* Left Scroll Button */}
       <button
         onClick={() => scroll("left")}
@@ -92,7 +97,7 @@ export default function ServicesCarousel() {
       {/* Scrollable Cards Container */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory scroll-smooth px-2"
+        className="overflow-x-auto overflow-y-visible scrollbar-hide pb-4 pt-2 snap-x snap-mandatory scroll-smooth px-2"
       >
         <div className="flex gap-6 min-w-max">
           {services.map((service) => (
@@ -130,18 +135,22 @@ export default function ServicesCarousel() {
 
       {/* Navigation Dots */}
       <div className="flex justify-center gap-2 mt-6">
-        {services.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => scrollToIndex(index)}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === activeIndex
-                ? "bg-[#6B46C1]"
-                : "bg-white border-2 border-gray-300 hover:border-[#6B46C1]"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+        {[0, 1, 2].map((dotIndex) => {
+          // Map dot indices to service indices (0, 2, 4 for 5 services)
+          const serviceIndex = dotIndex === 0 ? 0 : dotIndex === 1 ? 2 : 4;
+          return (
+            <button
+              key={dotIndex}
+              onClick={() => scrollToIndex(serviceIndex)}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                serviceIndex === activeIndex
+                  ? "bg-white"
+                  : "bg-white/50 border-2 border-white/70 hover:border-white"
+              }`}
+              aria-label={`Go to slide ${serviceIndex + 1}`}
+            />
+          );
+        })}
       </div>
     </div>
   );
