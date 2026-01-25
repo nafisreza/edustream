@@ -47,9 +47,9 @@ export default function Home() {
         {/* Services Carousel Section */}
         <section id="features" className="pt-2 sm:pt-4 lg:pt-6 pb-6 sm:pb-8 lg:pb-10 relative overflow-visible">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
+            {/* <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
               Services we offer
-            </h2>
+            </h2> */}
           </div>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
             <ServicesCarousel />
