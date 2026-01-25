@@ -46,6 +46,20 @@ const services = [
       "Integration: Seamlessly integrate whiteboard sessions with your video meetings and classroom recordings.",
     ],
   },
+  {
+    id: "chat",
+    name: "Chat",
+    image: "/chat_services_details.png",
+    description:
+      "Real-time messaging platform for seamless text-based communication between teachers and students during and outside class sessions.",
+    features: [
+      "Real-time messaging: Instant text communication that keeps conversations flowing smoothly during live sessions and beyond.",
+      "Message history: Access complete chat logs and conversation history for review and reference at any time.",
+      "File sharing: Share documents, images, and other educational materials directly through the chat interface.",
+      "Private and group chats: Support both one-on-one conversations and group discussions for flexible communication.",
+      "Notifications: Stay informed with smart notifications that alert you to important messages without disrupting your workflow.",
+    ],
+  },
 ];
 
 export default function ServicesDetails() {
