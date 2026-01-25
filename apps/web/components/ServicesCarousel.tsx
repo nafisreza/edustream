@@ -29,6 +29,11 @@ export default function ServicesCarousel() {
       image: "/recap.webp",
       alt: "Recap",
     },
+    {
+      name: "Chat",
+      image: "/chat.png",
+      alt: "Chat",
+    },
   ];
 
   const scroll = (direction: "left" | "right") => {
@@ -130,18 +135,22 @@ export default function ServicesCarousel() {
 
       {/* Navigation Dots */}
       <div className="flex justify-center gap-2 mt-6">
-        {services.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => scrollToIndex(index)}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === activeIndex
-                ? "bg-white"
-                : "bg-white/50 border-2 border-white/70 hover:border-white"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+        {[0, 1, 2].map((dotIndex) => {
+          // Map dot indices to service indices (0, 2, 4 for 5 services)
+          const serviceIndex = dotIndex === 0 ? 0 : dotIndex === 1 ? 2 : 4;
+          return (
+            <button
+              key={dotIndex}
+              onClick={() => scrollToIndex(serviceIndex)}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                serviceIndex === activeIndex
+                  ? "bg-white"
+                  : "bg-white/50 border-2 border-white/70 hover:border-white"
+              }`}
+              aria-label={`Go to slide ${serviceIndex + 1}`}
+            />
+          );
+        })}
       </div>
     </div>
   );

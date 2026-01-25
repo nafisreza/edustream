@@ -25,18 +25,12 @@ export default function Home() {
                   EduStream brings teachers and students together in real time with smooth video streaming,
                   classroom controls, and a clean interface built for effective online learning.
                 </p>
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center">
                   <Link
                     href="/signup"
                     className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-10 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
                   >
                     Let&apos;s get started!
-                  </Link>
-                  <Link
-                    href="/create"
-                    className="inline-flex h-14 items-center justify-center rounded-lg border-2 border-white px-10 text-base font-semibold text-white shadow-sm transition-colors hover:bg-white/10"
-                  >
-                    Explore products
                   </Link>
                 </div>
               </div>
