@@ -79,7 +79,7 @@ export default function ServicesCarousel() {
   }, [services.length]);
 
   return (
-    <div className="relative">
+    <div className="relative overflow-visible">
       {/* Left Scroll Button */}
       <button
         onClick={() => scroll("left")}
@@ -92,7 +92,7 @@ export default function ServicesCarousel() {
       {/* Scrollable Cards Container */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory scroll-smooth px-2"
+        className="overflow-x-auto overflow-y-visible scrollbar-hide pb-4 pt-2 snap-x snap-mandatory scroll-smooth px-2"
       >
         <div className="flex gap-6 min-w-max">
           {services.map((service) => (
