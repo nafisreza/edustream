@@ -7,7 +7,7 @@ const services = [
   {
     id: "meeting",
     name: "Meeting",
-    image: "/meeting.jpg",
+    image: "/meeting_services_details.png",
     description:
       "AI-first video conferencing for team collaboration lets you work together without friction using high-quality video, audio, and screen sharing, all built into EduStream.",
     features: [
@@ -21,7 +21,7 @@ const services = [
   {
     id: "online-classroom",
     name: "Online Classroom",
-    image: "/online classroom.png",
+    image: "/onlineclassroom_services_details.png",
     description:
       "A comprehensive virtual classroom solution designed for education, featuring real-time video, interactive tools, breakout rooms, and complete teacher control.",
     features: [
@@ -35,7 +35,7 @@ const services = [
   {
     id: "whiteboard",
     name: "Whiteboard",
-    image: "/whiteboard.png",
+    image: "/whiteboard_services_details.png",
     description:
       "Interactive digital whiteboard for collaborative learning, featuring drawing tools, shapes, text, and real-time collaboration for teachers and students.",
     features: [
