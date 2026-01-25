@@ -109,6 +109,21 @@
   scroll-snap-align: center;
 }
 
+/* Hero gradient */
+.hero-gradient {
+  background-image: linear-gradient(to bottom, 
+    #4A23A3 0%,
+    #4A23A3 9%,
+    #5B21B6 18%,
+    #6B46C1 30%,
+    #7C3AED 45%,
+    #9333EA 60%,
+    #C084FC 75%,
+    #E9D5FF 88%,
+    #FFFFFF 100%
+  );
+}
+
 /* Review system animations */
 @keyframes fadeIn {
   from {
