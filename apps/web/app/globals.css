@@ -111,7 +111,7 @@
 
 /* Hero gradient */
 .hero-gradient {
-  background: linear-gradient(to bottom, 
+  background-image: linear-gradient(to bottom, 
     #4A23A3 0%,
     #4A23A3 9%,
     #5B21B6 18%,
