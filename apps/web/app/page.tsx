@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Gradient Container - Navbar + Hero + Services */}
-      <div className="relative hero-gradient">
+      <div className="relative hero-gradient min-h-screen">
         <Navbar />
         
         {/* Hero Section */}
