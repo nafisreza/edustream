@@ -3,6 +3,7 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import ServicesCarousel from "@/components/ServicesCarousel";
 import ServicesDetails from "@/components/ServicesDetails";
+import CustomerJourney from "@/components/CustomerJourney";
 
 export default function Home() {
   return (
@@ -53,9 +54,11 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1">
-
         {/* Services Details Section */}
         <ServicesDetails />
+
+        {/* Customer Journey Section */}
+        <CustomerJourney />
       </main>
 
       {/* Footer */}
@@ -66,7 +69,7 @@ export default function Home() {
             <div className="col-span-1 md:col-span-2">
               <Link href="/" className="inline-block mb-4">
                 <Image
-                  src="/EduStreamLogo.png"
+                  src="/EduStreamLogo_purple.png"
                   alt="EduStream Logo"
                   width={140}
                   height={40}
