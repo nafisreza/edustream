@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createRoom, getRoom, joinRoom, closeRoom } from '../controllers/room.controller';
+import { createRoom, getRoom, joinRoom, closeRoom, getRoomToken } from '../controllers/room.controller';
 import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -11,5 +11,6 @@ router.post('/create', createRoom);
 router.get('/:id', getRoom);
 router.post('/:id/join', joinRoom);
 router.delete('/:id', closeRoom);
+router.get('/:id/token', getRoomToken);
 
 export default router;

@@ -34,6 +34,11 @@ export default function JoinPage() {
       // Verify room exists
       await roomApi.getRoom(roomId);
       
+      // Join the room (adds user to participants)
+      await roomApi.joinRoom(roomId, { name: user?.name || 'Anonymous' });
+      
+      toast.success("Joined room successfully");
+      
       // Navigate to room page
       router.push(`/room/${roomId}`);
     } catch (error: any) {

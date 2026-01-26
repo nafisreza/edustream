@@ -42,7 +42,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user._id.toString(), email: user.email, role: user.role },
+        { userId: user._id.toString(), email: user.email, role: user.role, name: user.name },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
@@ -97,7 +97,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user._id.toString(), email: user.email, role: user.role },
+        { userId: user._id.toString(), email: user.email, role: user.role, name: user.name },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
