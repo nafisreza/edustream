@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut } from "lucide-react";
+import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
+import { VideoPresets } from "livekit-client";
+import "@livekit/components-styles/index.css";
 
 interface RoomPageProps {
   params: Promise<{
@@ -18,6 +20,8 @@ export default function RoomPage({ params }: RoomPageProps) {
   const { user, isLoading } = useAuth();
   const [roomId, setRoomId] = useState<string>("");
   const [roomData, setRoomData] = useState<any>(null);
+  const [livekitToken, setLivekitToken] = useState<string>("");
+  const [livekitUrl, setLivekitUrl] = useState<string>("");
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
 
   useEffect(() => {
@@ -40,9 +44,25 @@ export default function RoomPage({ params }: RoomPageProps) {
     try {
       const response = await roomApi.getRoom(roomId);
       setRoomData(response.room);
+
+      // Get LiveKit token
+      const tokenResponse = await roomApi.getRoomToken(roomId);
+      console.log('LiveKit connection details:', {
+        url: tokenResponse.url,
+        roomName: tokenResponse.roomName,
+        participantName: tokenResponse.participantName,
+        isHost: tokenResponse.isHost,
+      });
+      setLivekitToken(tokenResponse.token);
+      setLivekitUrl(tokenResponse.url);
     } catch (error: any) {
+      console.error('Failed to load room:', error);
       if (error.response?.status === 404) {
         toast.error("Room not found or has been closed");
+      } else if (error.response?.status === 403) {
+        toast.error("You must join the room first");
+        router.push(`/join?roomId=${roomId}`);
+        return;
       } else {
         toast.error("Failed to load room");
       }
@@ -52,23 +72,15 @@ export default function RoomPage({ params }: RoomPageProps) {
     }
   };
 
-  const handleLeaveRoom = () => {
+  const handleDisconnect = () => {
+    console.log('Disconnected from room');
     toast.success("Left the room");
     router.push("/");
   };
 
-  const handleCloseRoom = async () => {
-    if (!confirm("Are you sure you want to close this room? All participants will be disconnected.")) {
-      return;
-    }
-
-    try {
-      await roomApi.closeRoom(roomId);
-      toast.success("Room closed successfully");
-      router.push("/");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to close room");
-    }
+  const handleError = (error: Error) => {
+    console.error('LiveKit error:', error);
+    toast.error(`Connection error: ${error.message}`);
   };
 
   if (isLoading || isLoadingRoom) {
@@ -79,60 +91,23 @@ export default function RoomPage({ params }: RoomPageProps) {
     );
   }
 
-  if (!user || !roomData) return null;
-
-  const isHost = roomData.hostId === user.id;
+  if (!user || !roomData || !livekitToken) return null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">{roomData.name}</h1>
-            <p className="text-xs text-gray-500">Room ID: {roomId}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isHost && (
-              <button
-                onClick={handleCloseRoom}
-                className="rounded-lg border border-red-600 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                Close Room
-              </button>
-            )}
-            <button
-              onClick={handleLeaveRoom}
-              className="flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
-            >
-              <LogOut className="h-4 w-4" />
-              Leave
-            </button>
-          </div>
-        </div>
-      </header>
-      <main className="flex flex-1 items-center justify-center p-8">
-        <div className="w-full max-w-4xl space-y-4 text-center">
-          <div className="rounded-lg border bg-white p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-gray-900">Room Session</h2>
-            <p className="mt-2 text-gray-600">
-              {roomData.description || "No description"}
-            </p>
-            <div className="mt-6 space-y-2">
-              <p className="text-sm text-gray-500">
-                Host: <span className="font-medium text-gray-900">{roomData.hostName}</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                Participants: <span className="font-medium text-gray-900">{roomData.participantCount || 0}</span>
-              </p>
-            </div>
-            <div className="mt-8 rounded-lg border bg-gray-50 p-8">
-              <p className="text-gray-600">
-                WebRTC video/audio streaming will be implemented here
-              </p>
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="flex min-h-screen flex-col bg-white">
+      <LiveKitRoom
+        token={livekitToken}
+        serverUrl={livekitUrl}
+        connect={true}
+        video={{ resolution: VideoPresets.h720.resolution }}
+        audio={true}
+        onDisconnected={handleDisconnect}
+        onError={handleError}
+        data-lk-theme="default"
+        style={{ height: '100vh' }}
+      >
+        <VideoConference />
+      </LiveKitRoom>
     </div>
   );
 }
