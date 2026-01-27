@@ -69,15 +69,15 @@ export default function CustomerJourney() {
                 className="relative flex-shrink-0 rounded-2xl overflow-hidden cursor-pointer snap-center transition-all duration-500 ease-in-out"
                 style={{
                   width: isHovered 
-                    ? "min(800px, 70vw)" 
+                    ? "min(640px, 60vw)" 
                     : hasOtherHover 
-                    ? "min(200px, 15vw)" 
-                    : "min(300px, 25vw)",
+                    ? "min(160px, 12vw)" 
+                    : "min(260px, 22vw)",
                   minWidth: isHovered 
-                    ? "min(800px, 70vw)" 
+                    ? "min(640px, 60vw)" 
                     : hasOtherHover 
-                    ? "min(150px, 12vw)" 
-                    : "min(250px, 20vw)",
+                    ? "min(120px, 10vw)" 
+                    : "min(220px, 18vw)",
                   height: "500px",
                 }}
                 onMouseEnter={() => setHoveredId(story.id)}
