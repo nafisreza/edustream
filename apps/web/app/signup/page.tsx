@@ -8,7 +8,6 @@ import { toast } from "react-hot-toast";
 import { registerSchema } from "@edustream/types";
 import { authApi } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -54,7 +53,7 @@ export default function SignupPage() {
       setUser(response.user);
 
       toast.success("Account created successfully!");
-      router.push("/create");
+      router.push("/");
     } catch (error: any) {
       if (error.name === 'ZodError') {
         const firstError = error.errors[0];
@@ -79,7 +78,6 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Navbar />
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
