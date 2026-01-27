@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Users, User as UserIcon, Eye, EyeOff } from "lucide-react";
+import SideNav from "@/components/SideNav";
 
 export default function ProfilePage() {
   const { user, isLoading } = useAuth();
@@ -58,7 +59,11 @@ export default function ProfilePage() {
     .slice(0, 2);
 
   return (
-    <div className="flex-1 py-8">
+    <div className="flex mx-auto container bg-gray-50">
+      <div>
+        <SideNav/>
+      </div>
+      <div className="flex-1 py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           {/* Privacy Banner */}
@@ -184,6 +189,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
