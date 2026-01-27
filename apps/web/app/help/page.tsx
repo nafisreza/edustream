@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 // Common questions for auto-suggestions
 const suggestions = [
@@ -533,45 +534,292 @@ const questionAnswers: { [key: string]: { title: string; content: React.ReactNod
   }
 };
 
-const helpCategories = [
-  {
-    title: 'Getting Started',
-    icon: '🚀',
-    description: 'Learn the basics of using EduStream'
+// Category content mapping
+const categoryContent: { [key: string]: { title: string; content: React.ReactNode } } = {
+  "getting-started": {
+    title: "Getting Started",
+    content: (
+      <div>
+        <p className="mb-4">Welcome to EduStream! Getting started is easy:</p>
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">For Teachers:</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Create an account to manage classrooms</li>
+              <li>Set up rooms for your students</li>
+              <li>Use teacher controls and features</li>
+              <li>Access analytics and reports</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">For Students:</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Join rooms directly with a room ID</li>
+              <li>No account required</li>
+              <li>Use all interactive features</li>
+              <li>Participate in real-time</li>
+            </ul>
+          </div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h4 className="font-semibold mb-2">System Requirements:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Modern web browser (Chrome, Firefox, Safari, Edge)</li>
+            <li>Stable internet connection (5 Mbps recommended)</li>
+            <li>Camera and microphone access</li>
+            <li>No downloads or installations required!</li>
+          </ul>
+        </div>
+      </div>
+    )
   },
-  {
-    title: 'Video & Audio',
-    icon: '🎥',
-    description: 'Camera, microphone, and streaming features'
+  "video-audio": {
+    title: "Video & Audio Features",
+    content: (
+      <div>
+        <p className="mb-4">EduStream offers comprehensive video and audio features:</p>
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🎥 Video Features</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>HD video conferencing with peer-to-peer technology</li>
+              <li>Toggle camera on/off anytime</li>
+              <li>Adjustable video quality settings</li>
+              <li>Virtual backgrounds and blur effects</li>
+              <li>Grid and spotlight viewing modes</li>
+            </ul>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🎤 Audio Features</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Crystal-clear audio transmission</li>
+              <li>Mute/unmute controls</li>
+              <li>Push-to-talk option</li>
+              <li>Audio level indicators</li>
+              <li>Echo cancellation and noise suppression</li>
+            </ul>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">📺 Screen Sharing</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Share entire screen or specific windows</li>
+              <li>Share application tabs</li>
+              <li>Control sharing permissions</li>
+              <li>High-quality screen transmission</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    )
   },
-  {
-    title: 'Interactive Tools',
-    icon: '📝',
-    description: 'Whiteboard, chat, polls, and collaboration'
+  "interactive-tools": {
+    title: "Interactive Tools",
+    content: (
+      <div>
+        <p className="mb-4">Engage your students with powerful interactive tools:</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">✏️ Whiteboard</h4>
+            <ul className="list-disc pl-5 text-sm space-y-1">
+              <li>Collaborative drawing canvas</li>
+              <li>Multiple drawing tools</li>
+              <li>Text and shapes</li>
+              <li>Save and export boards</li>
+              <li>Real-time collaboration</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">💬 Chat</h4>
+            <ul className="list-disc pl-5 text-sm space-y-1">
+              <li>Real-time messaging</li>
+              <li>Public and private messages</li>
+              <li>File sharing</li>
+              <li>Emoji support</li>
+              <li>Chat moderation tools</li>
+            </ul>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">📊 Polls & Quizzes</h4>
+            <ul className="list-disc pl-5 text-sm space-y-1">
+              <li>Create instant polls</li>
+              <li>Multiple choice quizzes</li>
+              <li>Real-time results</li>
+              <li>Anonymous responses</li>
+              <li>Export results</li>
+            </ul>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">📁 File Sharing</h4>
+            <ul className="list-disc pl-5 text-sm space-y-1">
+              <li>Share documents and images</li>
+              <li>Drag-and-drop upload</li>
+              <li>Multiple file formats</li>
+              <li>Download shared files</li>
+              <li>Size limits and security</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    )
   },
-  {
-    title: 'Teacher Controls',
-    icon: '👨‍🏫',
-    description: 'Managing classrooms and participants'
+  "teacher-controls": {
+    title: "Teacher Controls",
+    content: (
+      <div>
+        <p className="mb-4">Powerful tools for managing your virtual classroom:</p>
+        <div className="space-y-4">
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">👥 Participant Management</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Admit participants from waiting room</li>
+              <li>Remove disruptive participants</li>
+              <li>Mute/unmute individual or all participants</li>
+              <li>Assign participant roles and permissions</li>
+              <li>View participant list and status</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🚪 Room Controls</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Lock/unlock rooms</li>
+              <li>Set room passwords</li>
+              <li>Configure waiting room</li>
+              <li>Set participant limits</li>
+              <li>End session for all</li>
+            </ul>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">📚 Breakout Rooms</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Create multiple breakout rooms</li>
+              <li>Auto or manual assignment</li>
+              <li>Set time limits</li>
+              <li>Broadcast messages to all rooms</li>
+              <li>Join any breakout room</li>
+            </ul>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">📹 Recording</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Record sessions locally</li>
+              <li>Pause and resume recording</li>
+              <li>Include audio and video</li>
+              <li>Record screen shares</li>
+              <li>Privacy controls and notifications</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    )
   },
-  {
-    title: 'Troubleshooting',
-    icon: '🔧',
-    description: 'Fix common issues and problems'
+  "troubleshooting": {
+    title: "Troubleshooting Guide",
+    content: (
+      <div>
+        <p className="mb-4">Solutions to common issues:</p>
+        <div className="space-y-4">
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🎥 Video Issues</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Grant camera permissions in browser</li>
+              <li>Check if another app is using the camera</li>
+              <li>Try refreshing the page</li>
+              <li>Update your browser</li>
+              <li>Check system camera settings</li>
+            </ul>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🎤 Audio Issues</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Grant microphone permissions</li>
+              <li>Check if you're muted</li>
+              <li>Test microphone in system settings</li>
+              <li>Try different audio device</li>
+              <li>Restart browser</li>
+            </ul>
+          </div>
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🌐 Connection Issues</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Check internet connection</li>
+              <li>Lower video quality</li>
+              <li>Close bandwidth-heavy apps</li>
+              <li>Move closer to WiFi router</li>
+              <li>Use wired connection if possible</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">🔐 Access Issues</h4>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Verify room ID is correct</li>
+              <li>Wait for teacher approval</li>
+              <li>Check if room is full</li>
+              <li>Ensure room hasn't ended</li>
+              <li>Try different browser</li>
+            </ul>
+          </div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg mt-4">
+          <p className="font-semibold mb-2">Still having issues?</p>
+          <p className="text-sm">Contact our support team at <a href="mailto:support@edustream.com" className="text-purple-600 underline">support@edustream.com</a></p>
+        </div>
+      </div>
+    )
   },
-  {
-    title: 'Contact Support',
-    icon: '💬',
-    description: 'Get help from our support team'
+  "contact": {
+    title: "Contact Support",
+    content: (
+      <div>
+        <p className="mb-6">Our support team is here to help you with any questions or issues.</p>
+        <div className="space-y-4">
+          <div className="bg-purple-50 p-6 rounded-lg">
+            <h4 className="font-semibold mb-3 text-lg">📧 Email Support</h4>
+            <p className="mb-2"><a href="mailto:support@edustream.com" className="text-purple-600 underline text-lg">support@edustream.com</a></p>
+            <p className="text-sm text-gray-600">We typically respond within 24 hours during business days</p>
+          </div>
+          <div className="bg-blue-50 p-6 rounded-lg">
+            <h4 className="font-semibold mb-3 text-lg">📚 Documentation</h4>
+            <p className="mb-2"><a href="/docs" className="text-blue-600 underline text-lg">docs.edustream.com</a></p>
+            <p className="text-sm text-gray-600">Comprehensive guides, tutorials, and API documentation</p>
+          </div>
+          <div className="bg-green-50 p-6 rounded-lg">
+            <h4 className="font-semibold mb-3 text-lg">💬 Community Forum</h4>
+            <p className="mb-2"><a href="/community" className="text-green-600 underline text-lg">community.edustream.com</a></p>
+            <p className="text-sm text-gray-600">Connect with other educators and share best practices</p>
+          </div>
+          <div className="bg-orange-50 p-6 rounded-lg">
+            <h4 className="font-semibold mb-3 text-lg">🐛 Report a Bug</h4>
+            <p className="mb-2"><a href="/report-bug" className="text-orange-600 underline text-lg">Report Technical Issues</a></p>
+            <p className="text-sm text-gray-600">Help us improve by reporting bugs and technical problems</p>
+          </div>
+        </div>
+        <div className="bg-gray-100 p-6 rounded-lg mt-6">
+          <h4 className="font-semibold mb-3">Business Hours</h4>
+          <p className="text-sm text-gray-700">Monday - Friday: 9:00 AM - 6:00 PM EST</p>
+          <p className="text-sm text-gray-700">Saturday - Sunday: Limited support</p>
+        </div>
+      </div>
+    )
   }
-];
+};
 
 export default function HelpPage() {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [reviewResponse, setReviewResponse] = useState<boolean | null>(null);
   const [showReview, setShowReview] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState<{ title: string; content: React.ReactNode } | null>(null);
+
+  // Check for query parameter on mount
+  useEffect(() => {
+    const questionParam = searchParams.get('q');
+    if (questionParam && questionAnswers[questionParam]) {
+      openModal(questionParam, questionAnswers[questionParam]);
+    }
+  }, [searchParams]);
 
   // Filter suggestions based on search query
   const filteredSuggestions = suggestions.filter(suggestion =>
@@ -580,264 +828,333 @@ export default function HelpPage() {
     questionAnswers[suggestion]
   );
 
-  const handleSuggestionClick = (suggestion: string) => {
-    if (questionAnswers[suggestion]) {
-      setSelectedQuestion(suggestion);
-      setSearchQuery('');
-      setShowSuggestions(false);
-      setReviewResponse(null);
-      setShowReview(true);
-    }
+  const openModal = (key: string, content: { title: string; content: React.ReactNode }) => {
+    setSelectedQuestion(key);
+    setModalContent(content);
+    setShowModal(true);
+    setReviewResponse(null);
+    setShowReview(true);
   };
 
-  const handleBackToHelp = () => {
+  const closeModal = () => {
+    setShowModal(false);
+    setModalContent(null);
     setSelectedQuestion(null);
-    setSearchQuery('');
     setReviewResponse(null);
     setShowReview(false);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    if (questionAnswers[suggestion]) {
+      openModal(suggestion, questionAnswers[suggestion]);
+      setSearchQuery('');
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleCategoryClick = (categoryKey: string) => {
+    if (categoryContent[categoryKey]) {
+      openModal(categoryKey, categoryContent[categoryKey]);
+    }
+  };
+
   return (
     <main className="min-h-screen flex flex-col">
-      {selectedQuestion && questionAnswers[selectedQuestion] ? (
-        // Answer View - Regular layout
-        <div className="max-w-3xl mx-auto px-4 py-12 w-full">
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={handleBackToHelp}
-              className="flex items-center text-purple-600 hover:text-purple-800 transition-colors"
-            >
-              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Help Center
-            </button>
+      {/* Main Help Center - Full screen centered layout */}
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
+        <div className="w-full max-w-4xl">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
+              Help Center
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-700 font-medium">
+              How can we help you?
+            </p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h1 className="text-3xl font-bold mb-6" style={{ color: '#6B46C1' }}>
-              {questionAnswers[selectedQuestion].title}
-            </h1>
-            <div className="prose prose-lg max-w-none">
-              {questionAnswers[selectedQuestion].content}
+          {/* Search Bar */}
+          <div className="mb-16">
+            <div className="max-w-2xl mx-auto relative">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search for help topics..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="w-full px-6 py-4 pl-14 pr-6 text-lg text-gray-900 bg-white border-2 border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-lg hover:shadow-xl transition-shadow"
+                />
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Suggestions Dropdown */}
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
+                  {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full px-6 py-4 text-left hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <svg className="h-5 w-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span className="text-gray-700 font-medium">{suggestion}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {showReview && (
-            <div className="mt-8 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-6">
-              <div className="text-center">
-                {reviewResponse === null ? (
-                  <>
-                    <div className="mb-4">
-                      <span className="text-2xl">🤔</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                      Was this answer helpful?
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Help us improve our help center!
-                    </p>
-                    <div className="flex justify-center gap-4">
-                      <button
-                        onClick={() => setReviewResponse(true)}
-                        className="flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-all transform hover:scale-105 shadow-md"
-                      >
-                        <span className="text-lg">👍</span>
-                        Yes, helpful!
-                      </button>
-                      <button
-                        onClick={() => setReviewResponse(false)}
-                        className="flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-all transform hover:scale-105 shadow-md"
-                      >
-                        <span className="text-lg">👎</span>
-                        Not really
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="animate-fade-in">
-                    <div className="mb-4">
-                      <span className="text-3xl">{reviewResponse ? '🎉' : '💡'}</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                      {reviewResponse ? 'Thanks for the feedback!' : 'Thanks for letting us know!'}
-                    </h3>
-                    <p className="text-gray-600">
-                      {reviewResponse 
-                        ? 'We\'re glad we could help! 😊' 
-                        : 'We\'ll work on making this better. 📈'
-                      }
-                    </p>
-                  </div>
-                )}
+          {/* Help Categories */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <button
+              onClick={() => handleCategoryClick('getting-started')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">🚀</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Getting Started</h3>
+              <p className="text-gray-600">Learn the basics of using EduStream</p>
+            </button>
+
+            <button
+              onClick={() => handleCategoryClick('video-audio')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">🎥</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Video & Audio</h3>
+              <p className="text-gray-600">Camera, microphone, and streaming features</p>
+            </button>
+
+            <button
+              onClick={() => handleCategoryClick('interactive-tools')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">📝</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Interactive Tools</h3>
+              <p className="text-gray-600">Whiteboard, chat, polls, and collaboration</p>
+            </button>
+
+            <button
+              onClick={() => handleCategoryClick('teacher-controls')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">👨‍🏫</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Teacher Controls</h3>
+              <p className="text-gray-600">Managing classrooms and participants</p>
+            </button>
+
+            <button
+              onClick={() => handleCategoryClick('troubleshooting')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">🔧</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Troubleshooting</h3>
+              <p className="text-gray-600">Fix common issues and problems</p>
+            </button>
+
+            <button
+              onClick={() => handleCategoryClick('contact')}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 text-left"
+            >
+              <div className="text-4xl mb-3">💬</div>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Contact Support</h3>
+              <p className="text-gray-600">Get help from our support team</p>
+            </button>
+          </div>
+
+          {/* Bottom Text */}
+          <div className="text-center mt-16">
+            <p className="text-gray-600 text-lg mb-3">
+              Can't find what you're looking for?
+            </p>
+            <a 
+              href="mailto:support@edustream.com"
+              className="inline-flex items-center text-purple-600 hover:text-purple-800 font-semibold text-lg transition-colors"
+            >
+              Contact our support team
+              <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-50 border-t border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Logo and Description */}
+            <div>
+              <a href="/" className="inline-block mb-4">
+                <img 
+                  src="/EduStreamLogo_purple.png" 
+                  alt="EduStream Logo" 
+                  className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                />
+              </a>
+              <p className="text-gray-600">
+                Transform learning with interactive streaming. Connect educators and learners in real-time sessions.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">Quick Links</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="/create-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Create Room
+                  </a>
+                </li>
+                <li>
+                  <a href="/join-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Join Room
+                  </a>
+                </li>
+                <li>
+                  <a href="/features" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Features
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">Support</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="/help" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="/contact" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="/privacy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="border-t border-gray-200 pt-8 text-center">
+            <p className="text-gray-600">
+              © 2026 EduStream. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modal */}
+      {showModal && modalContent && (
+        <div 
+          className="fixed inset-0 bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 flex items-center justify-center z-50 p-4 overflow-y-auto" 
+          onClick={closeModal}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl">
+              <h2 className="text-2xl font-bold text-gray-900">{modalContent.title}</h2>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700 transition-colors p-2 hover:bg-white rounded-full"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              <div className="prose prose-lg max-w-none">
+                {modalContent.content}
               </div>
             </div>
-          )}
-        </div>
-      ) : (
-        // Main Help Center - Full screen centered layout
-        <>
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
-            <div className="w-full max-w-4xl">
-              {/* Header */}
-              <div className="text-center mb-12">
-                <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
-                  Help Center
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-700 font-medium">
-                  How can we help you?
-                </p>
-              </div>
-              
-              {/* Search Bar */}
-              <div className="mb-16">
-                <div className="max-w-2xl mx-auto relative">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search for help topics..."
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setShowSuggestions(true);
-                      }}
-                      onFocus={() => setShowSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                      className="w-full px-6 py-4 pl-14 pr-6 text-lg text-gray-900 bg-white border-2 border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-lg hover:shadow-xl transition-shadow"
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                      <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Suggestions Dropdown */}
-                  {showSuggestions && filteredSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
-                      {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+
+            {/* Review Section - Always visible at bottom */}
+            {showReview && (
+              <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-purple-50 to-blue-50">
+                <div className="text-center">
+                  {reviewResponse === null ? (
+                    <>
+                      <div className="mb-3">
+                        <span className="text-2xl">🤔</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        Was this answer helpful?
+                      </h3>
+                      <p className="text-gray-600 mb-4 text-sm">
+                        Help us improve our help center!
+                      </p>
+                      <div className="flex justify-center gap-3">
                         <button
-                          key={index}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full px-6 py-4 text-left hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
+                          onClick={() => setReviewResponse(true)}
+                          className="flex items-center gap-2 bg-green-500 text-white px-5 py-2.5 rounded-lg hover:bg-green-600 transition-all transform hover:scale-105 shadow-md text-sm"
                         >
-                          <div className="flex items-center">
-                            <svg className="h-5 w-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <span className="text-gray-700 font-medium">{suggestion}</span>
-                          </div>
+                          <span className="text-lg">👍</span>
+                          Yes, helpful!
                         </button>
-                      ))}
+                        <button
+                          onClick={() => setReviewResponse(false)}
+                          className="flex items-center gap-2 bg-red-500 text-white px-5 py-2.5 rounded-lg hover:bg-red-600 transition-all transform hover:scale-105 shadow-md text-sm"
+                        >
+                          <span className="text-lg">👎</span>
+                          Not really
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="animate-fade-in">
+                      <div className="mb-3">
+                        <span className="text-3xl">{reviewResponse ? '🎉' : '💡'}</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        {reviewResponse ? 'Thanks for the feedback!' : 'Thanks for letting us know!'}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        {reviewResponse 
+                          ? 'We\'re glad we could help! 😊' 
+                          : 'We\'ll work on making this better. 📈'
+                        }
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
+            )}
 
-              {/* Help Categories */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {helpCategories.map((category, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200"
-                  >
-                    <div className="text-4xl mb-3">{category.icon}</div>
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">{category.title}</h3>
-                    <p className="text-gray-600">{category.description}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom Text */}
-              <div className="text-center mt-16">
-                <p className="text-gray-600 text-lg mb-3">
-                  Can't find what you're looking for?
-                </p>
-                <a 
-                  href="mailto:support@edustream.com"
-                  className="inline-flex items-center text-purple-600 hover:text-purple-800 font-semibold text-lg transition-colors"
-                >
-                  Contact our support team
-                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </a>
-              </div>
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-end rounded-b-2xl">
+              <button
+                onClick={closeModal}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Close
+              </button>
             </div>
           </div>
-
-          {/* Footer */}
-          <footer className="bg-gray-50 border-t border-gray-200 mt-16">
-            <div className="max-w-6xl mx-auto px-4 py-12">
-              <div className="grid md:grid-cols-3 gap-8 mb-8">
-                {/* Logo and Description */}
-                <div>
-                  <a href="/" className="inline-block mb-4">
-                    <img 
-                      src="/EduStreamLogo_purple.png" 
-                      alt="EduStream Logo" 
-                      className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
-                    />
-                  </a>
-                  <p className="text-gray-600">
-                    Transform learning with interactive streaming. Connect educators and learners in real-time sessions.
-                  </p>
-                </div>
-
-                {/* Quick Links */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-900">Quick Links</h3>
-                  <ul className="space-y-2">
-                    <li>
-                      <a href="/create-room" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Create Room
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/join-room" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Join Room
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/features" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Features
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Support */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-900">Support</h3>
-                  <ul className="space-y-2">
-                    <li>
-                      <a href="/help" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Help Center
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/contact" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Contact Us
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/privacy" className="text-gray-600 hover:text-purple-600 transition-colors">
-                        Privacy Policy
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Copyright */}
-              <div className="border-t border-gray-200 pt-8 text-center">
-                <p className="text-gray-600">
-                  © 2026 EduStream. All rights reserved.
-                </p>
-              </div>
-            </div>
-          </footer>
-        </>
+        </div>
       )}
     </main>
   );
