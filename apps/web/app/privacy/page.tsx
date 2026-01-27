@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import Link from 'next/link'; // Added this import for the contact link
+import Link from 'next/link';
 
 const sections = [
   {
@@ -53,7 +53,7 @@ const sections = [
     ),
   },
   {
-    title: "Children's Privacy", // Fixed: Used double quotes to avoid parsing error
+    title: "Children's Privacy", // Fixed: Used double quotes to handle the apostrophe
     content: (
       <p className="mb-4">EduStream is designed for educational use. We do not knowingly collect personal information from children under 13 without parental consent.</p>
     ),
@@ -81,7 +81,7 @@ export default function PrivacyPolicy() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50">
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 px-4 py-16">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
@@ -94,7 +94,7 @@ export default function PrivacyPolicy() {
             </p>
           </div>
 
-          {/* Introduction Section with Image */}
+          {/* Intro Section */}
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
             <div className="flex flex-col lg:flex-row gap-8 items-start">
               <div className="flex-1">
@@ -102,24 +102,20 @@ export default function PrivacyPolicy() {
                   Your Privacy Matters
                 </h2>
                 <p className="text-gray-700 mb-4 leading-relaxed">
-                  At EduStream, we value your privacy and are committed to protecting your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data while you use our browser-based virtual classroom platform.
-                </p>
-                <p className="text-gray-700 mb-4 leading-relaxed">
-                  By using EduStream, you agree to the collection and use of your information as described in this policy.
+                  At EduStream, we value your privacy and are committed to protecting your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data while you use our platform.
                 </p>
               </div>
-              
               <div className="lg:w-80 flex justify-center">
                 <img
                   src="/privacyphoto.png"
-                  alt="Privacy Policy Illustration"
+                  alt="Privacy Illustration"
                   className="w-72 h-72 object-contain rounded-lg shadow-md"
                 />
               </div>
             </div>
           </div>
 
-          {/* Accordion Sections */}
+          {/* FAQ / Accordion Section */}
           <div className="space-y-4">
             {sections.slice(1).map((section, idx) => (
               <div 
@@ -129,28 +125,17 @@ export default function PrivacyPolicy() {
                 <button
                   className="flex items-center w-full justify-between text-left px-8 py-6 focus:outline-none hover:bg-purple-50 transition-colors"
                   onClick={() => toggle(idx + 1)}
-                  aria-expanded={open[idx + 1]}
                 >
-                  <span 
-                    className="text-2xl font-bold"
-                    style={{ color: [1, 3, 5, 7].includes(idx + 1) ? '#6B46C1' : '#1F2937' }}
-                  >
+                  <span className="text-2xl font-bold text-gray-800">
                     {section.title}
                   </span>
-                  <span 
-                    className="text-3xl font-light transition-transform duration-300"
-                    style={{ 
-                      color: '#6B46C1',
-                      transform: open[idx + 1] ? 'rotate(180deg)' : 'rotate(0deg)',
-                      display: 'inline-block'
-                    }}
-                  >
+                  <span className="text-3xl text-purple-600">
                     {open[idx + 1] ? '−' : '+'}
                   </span>
                 </button>
                 
                 {open[idx + 1] && (
-                  <div className="px-8 pb-6 text-gray-700 border-t border-gray-100">
+                  <div className="px-8 pb-6 text-gray-700 border-t border-gray-100 animate-fade-in">
                     <div className="pt-4">
                       {section.content}
                     </div>
@@ -160,7 +145,7 @@ export default function PrivacyPolicy() {
             ))}
           </div>
 
-          {/* Updated Bottom CTA */}
+          {/* Modified Bottom CTA Block */}
           <div className="text-center mt-12 bg-white rounded-2xl shadow-lg p-8">
             <h3 className="text-2xl font-bold mb-3" style={{ color: '#6B46C1' }}>
               Have Questions?
@@ -179,47 +164,42 @@ export default function PrivacyPolicy() {
             </Link>
           </div>
 
-        </div> {/* max-w-5xl */}
-      </div> {/* flex-1 */}
+        </div> {/* End max-w-5xl */}
+      </div> {/* End flex-1 */}
 
-      {/* Footer */}
+      {/* Footer Section */}
       <footer className="bg-gray-50 border-t border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
-              <a href="/" className="inline-block mb-4">
+              <Link href="/" className="inline-block mb-4">
                 <img 
                   src="/EduStreamLogo_purple.png" 
                   alt="EduStream Logo" 
-                  className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  className="h-12 w-auto"
                 />
-              </a>
+              </Link>
               <p className="text-gray-600">
-                Transform learning with interactive streaming. Connect educators and learners in real-time sessions.
+                Transform learning with interactive streaming.
               </p>
             </div>
-
             <div>
               <h3 className="text-xl font-bold mb-4 text-gray-900">Quick Links</h3>
               <ul className="space-y-2">
                 <li><Link href="/create-room" className="text-gray-600 hover:text-purple-600">Create Room</Link></li>
                 <li><Link href="/join-room" className="text-gray-600 hover:text-purple-600">Join Room</Link></li>
-                <li><Link href="/features" className="text-gray-600 hover:text-purple-600">Features</Link></li>
               </ul>
             </div>
-
             <div>
               <h3 className="text-xl font-bold mb-4 text-gray-900">Support</h3>
               <ul className="space-y-2">
-                <li><Link href="/help" className="text-gray-600 hover:text-purple-600">Help Center</Link></li>
                 <li><Link href="/contact" className="text-gray-600 hover:text-purple-600">Contact Us</Link></li>
                 <li><Link href="/privacy" className="text-gray-600 hover:text-purple-600">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
-
-          <div className="border-t border-gray-200 pt-8 text-center">
-            <p className="text-gray-600">© 2026 EduStream. All rights reserved.</p>
+          <div className="border-t border-gray-200 pt-8 text-center text-gray-600">
+            © 2026 EduStream. All rights reserved.
           </div>
         </div>
       </footer>
