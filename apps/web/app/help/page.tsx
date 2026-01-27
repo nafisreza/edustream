@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 
 // Common questions for auto-suggestions
 const suggestions = [
-  // How questions
   "How to create a room",
   "How to join a room", 
   "How to use video features",
@@ -35,8 +34,6 @@ const suggestions = [
   "How do I create quizzes",
   "How do I manage permissions",
   "How do I check system requirements",
-  
-  // What questions
   "What is EduStream",
   "What are the features",
   "What browsers are supported",
@@ -52,8 +49,6 @@ const suggestions = [
   "What are the privacy settings",
   "What is the waiting room",
   "What are participant roles",
-  
-  // Why questions
   "Why can't I join a room",
   "Why is my video not working",
   "Why is my audio not working",
@@ -68,8 +63,6 @@ const suggestions = [
   "Why can't I see participants",
   "Why is the whiteboard not loading",
   "Why do I need to wait",
-  
-  // Can/Is questions
   "Can I use without account",
   "Can students create rooms",
   "Is EduStream free",
@@ -85,8 +78,6 @@ const suggestions = [
   "Can I use multiple devices",
   "Is there a time limit",
   "Can I share files",
-  
-  // Other common questions
   "Getting started guide",
   "Video not working",
   "Audio not working",
@@ -103,9 +94,7 @@ const suggestions = [
   "Room management"
 ];
 
-// Question to answer mapping
 const questionAnswers: { [key: string]: { title: string; content: React.ReactNode } } = {
-  // How questions
   "How to create a room": {
     title: "Creating a Room",
     content: (
@@ -275,8 +264,6 @@ const questionAnswers: { [key: string]: { title: string; content: React.ReactNod
       </div>
     )
   },
-
-  // What questions
   "What is EduStream": {
     title: "What is EduStream?",
     content: (
@@ -395,8 +382,6 @@ const questionAnswers: { [key: string]: { title: string; content: React.ReactNod
       </div>
     )
   },
-
-  // Why questions
   "Why can't I join a room": {
     title: "Can't Join Room - Troubleshooting",
     content: (
@@ -461,8 +446,6 @@ const questionAnswers: { [key: string]: { title: string; content: React.ReactNod
       </div>
     )
   },
-
-  // Can/Is questions
   "Can I use without account": {
     title: "Using EduStream Without an Account",
     content: (
@@ -534,7 +517,6 @@ const questionAnswers: { [key: string]: { title: string; content: React.ReactNod
   }
 };
 
-// Category content mapping
 const categoryContent: { [key: string]: { title: string; content: React.ReactNode } } = {
   "getting-started": {
     title: "Getting Started",
@@ -813,7 +795,6 @@ export default function HelpPage() {
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; content: React.ReactNode } | null>(null);
 
-  // Check for query parameter on mount
   useEffect(() => {
     const questionParam = searchParams.get('q');
     if (questionParam && questionAnswers[questionParam]) {
@@ -821,7 +802,6 @@ export default function HelpPage() {
     }
   }, [searchParams]);
 
-  // Filter suggestions based on search query
   const filteredSuggestions = suggestions.filter(suggestion =>
     suggestion.toLowerCase().includes(searchQuery.toLowerCase()) && 
     searchQuery.length > 0 &&
@@ -860,10 +840,8 @@ export default function HelpPage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Main Help Center - Full screen centered layout */}
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
         <div className="w-full max-w-4xl">
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
               Help Center
@@ -873,7 +851,6 @@ export default function HelpPage() {
             </p>
           </div>
           
-          {/* Search Bar */}
           <div className="mb-16">
             <div className="max-w-2xl mx-auto relative">
               <div className="relative">
@@ -896,7 +873,6 @@ export default function HelpPage() {
                 </div>
               </div>
               
-              {/* Suggestions Dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
                   {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
@@ -918,7 +894,6 @@ export default function HelpPage() {
             </div>
           </div>
 
-          {/* Help Categories */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <button
               onClick={() => handleCategoryClick('getting-started')}
@@ -975,13 +950,12 @@ export default function HelpPage() {
             </button>
           </div>
 
-          {/* Bottom Text */}
           <div className="text-center mt-16">
             <p className="text-gray-600 text-lg mb-3">
               Can't find what you're looking for?
             </p>
             <a 
-              href="mailto:support@edustream.com"
+              href="/contact"
               className="inline-flex items-center text-purple-600 hover:text-purple-800 font-semibold text-lg transition-colors"
             >
               Contact our support team
@@ -993,11 +967,9 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
-            {/* Logo and Description */}
             <div>
               <a href="/" className="inline-block mb-4">
                 <img 
@@ -1011,29 +983,27 @@ export default function HelpPage() {
               </p>
             </div>
 
-            {/* Quick Links */}
             <div>
               <h3 className="text-xl font-bold mb-4 text-gray-900">Quick Links</h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="/create-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  <a href="/create" className="text-gray-600 hover:text-purple-600 transition-colors">
                     Create Room
                   </a>
                 </li>
                 <li>
-                  <a href="/join-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  <a href="/join" className="text-gray-600 hover:text-purple-600 transition-colors">
                     Join Room
                   </a>
                 </li>
                 <li>
-                  <a href="/features" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  <a href="/#features" className="text-gray-600 hover:text-purple-600 transition-colors">
                     Features
                   </a>
                 </li>
               </ul>
             </div>
 
-            {/* Support */}
             <div>
               <h3 className="text-xl font-bold mb-4 text-gray-900">Support</h3>
               <ul className="space-y-2">
@@ -1056,7 +1026,6 @@ export default function HelpPage() {
             </div>
           </div>
 
-          {/* Copyright */}
           <div className="border-t border-gray-200 pt-8 text-center">
             <p className="text-gray-600">
               © 2026 EduStream. All rights reserved.
@@ -1065,14 +1034,12 @@ export default function HelpPage() {
         </div>
       </footer>
 
-      {/* Modal */}
       {showModal && modalContent && (
         <div 
           className="fixed inset-0 bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 flex items-center justify-center z-50 p-4 overflow-y-auto" 
           onClick={closeModal}
         >
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl">
               <h2 className="text-2xl font-bold text-gray-900">{modalContent.title}</h2>
               <button
@@ -1085,14 +1052,12 @@ export default function HelpPage() {
               </button>
             </div>
 
-            {/* Modal Content - Scrollable */}
             <div className="p-6 max-h-[50vh] overflow-y-auto">
               <div className="prose prose-lg max-w-none">
                 {modalContent.content}
               </div>
             </div>
 
-            {/* Review Section - Always visible at bottom */}
             {showReview && (
               <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-purple-50 to-blue-50">
                 <div className="text-center">
@@ -1144,7 +1109,6 @@ export default function HelpPage() {
               </div>
             )}
 
-            {/* Modal Footer */}
             <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-end rounded-b-2xl">
               <button
                 onClick={closeModal}

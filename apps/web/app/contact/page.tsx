@@ -2,79 +2,74 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-// Footer Component
+// Footer Component updated to match the image and functional requirements
 function Footer() {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+    <footer className="bg-white border-t border-gray-100 py-16">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left items-start">
           {/* Brand Section */}
           <div>
-            <Link href="http://localhost:3000" className="inline-block mb-4">
-              <img 
-                src="/EduStreamLogo_purple.png" 
-                alt="EduStream Logo" 
-                className="h-12 w-auto hover:opacity-80 transition-opacity"
+            <Link href="/" className="inline-block mb-4">
+              <img
+                src="/EduStreamLogo_purple.png"
+                alt="EduStream Logo"
+                className="h-10 w-auto"
               />
             </Link>
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
               Transform learning with interactive streaming. Connect educators and learners in real-time sessions.
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Links</h3>
-            <ul className="space-y-3">
+            <h3 className="text-lg font-bold mb-6 text-gray-900">Quick Links</h3>
+            <ul className="space-y-4">
               <li>
-                <Link href="/create-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/create" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Create Room
                 </Link>
               </li>
               <li>
-                <Link href="/join-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/join" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Join Room
                 </Link>
               </li>
               <li>
-                <Link href="/features" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/#features" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Features
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Support Section */}
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Support</h3>
-            <ul className="space-y-3">
+            <h3 className="text-lg font-bold mb-6 text-gray-900">Support</h3>
+            <ul className="space-y-4">
               <li>
-                <Link href="/help" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/help" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/contact" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                <Link href="/privacy" className="text-gray-500 hover:text-purple-600 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
             </ul>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <p className="text-center text-gray-600">
-            © 2026 EduStream. All rights reserved.
-          </p>
+        {/* Bottom Bar */}
+        <div className="mt-16 pt-8 border-t border-gray-50 text-center text-gray-500 text-sm">
+          © 2026 EduStream. All rights reserved.
         </div>
       </div>
     </footer>
@@ -103,13 +98,11 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+   
     setSubmitted(true);
     setIsSubmitting(false);
-    
     // Reset form after 3 seconds
     setTimeout(() => {
       setSubmitted(false);
@@ -158,7 +151,6 @@ export default function ContactPage() {
     <>
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
         <div className="w-full max-w-6xl">
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
               Contact Us
@@ -169,7 +161,6 @@ export default function ContactPage() {
           </div>
 
           {submitted ? (
-            // Success Message
             <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-3xl shadow-2xl p-12 text-center">
                 <div className="mb-6">
@@ -179,7 +170,7 @@ export default function ContactPage() {
                   Message Sent!
                 </h2>
                 <p className="text-xl text-gray-600 mb-6">
-                  Thank you for reaching out. We'll get back to you within 24 hours.
+                  Thank you for reaching out. [cite_start]We'll get back to you within 24 hours. [cite: 59]
                 </p>
                 <div className="inline-flex items-center text-purple-600 font-semibold">
                   <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
@@ -192,11 +183,9 @@ export default function ContactPage() {
             </div>
           ) : (
             <div className="grid lg:grid-cols-2 gap-8 items-start">
-              {/* Contact Form */}
               <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-10">
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Send us a message</h2>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Name */}
                   <div>
                     <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                       Your Name *
@@ -213,7 +202,6 @@ export default function ContactPage() {
                     />
                   </div>
 
-                  {/* Email */}
                   <div>
                     <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                       Email Address *
@@ -230,7 +218,6 @@ export default function ContactPage() {
                     />
                   </div>
 
-                  {/* Category */}
                   <div>
                     <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
                       Category *
@@ -252,7 +239,6 @@ export default function ContactPage() {
                     </select>
                   </div>
 
-                  {/* Subject */}
                   <div>
                     <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 mb-2">
                       Subject *
@@ -269,7 +255,6 @@ export default function ContactPage() {
                     />
                   </div>
 
-                  {/* Message */}
                   <div>
                     <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-2">
                       Message *
@@ -286,7 +271,6 @@ export default function ContactPage() {
                     />
                   </div>
 
-                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={isSubmitting}
@@ -307,9 +291,7 @@ export default function ContactPage() {
                 </form>
               </div>
 
-              {/* Contact Methods & Info */}
               <div className="space-y-6">
-                {/* Quick Contact Methods */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   {contactMethods.map((method, index) => (
                     <a
@@ -325,11 +307,10 @@ export default function ContactPage() {
                   ))}
                 </div>
 
-                {/* Additional Info Card */}
                 <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl p-8 text-white shadow-2xl">
                   <h3 className="text-2xl font-bold mb-4">💡 Need immediate help?</h3>
                   <p className="mb-6 text-purple-100">
-                    Check out our comprehensive help center with guides, tutorials, and FAQs to get answers instantly.
+                    [cite_start]Check out our comprehensive help center with guides, tutorials, and FAQs to get answers instantly. [cite: 91]
                   </p>
                   <Link
                     href="/help"
@@ -342,7 +323,6 @@ export default function ContactPage() {
                   </Link>
                 </div>
 
-                {/* Office Hours */}
                 <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">📅 Support Hours</h3>
                   <div className="space-y-2 text-gray-600">
@@ -361,12 +341,11 @@ export default function ContactPage() {
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-sm text-gray-600">
-                      <strong>Response Time:</strong> We typically respond within 24 hours during business days.
+                      [cite_start]<strong>Response Time:</strong> We typically respond within 24 hours during business days. [cite: 98]
                     </p>
                   </div>
                 </div>
 
-                {/* Social Media */}
                 <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">🌐 Connect With Us</h3>
                   <div className="flex gap-4">
@@ -385,7 +364,6 @@ export default function ContactPage() {
             </div>
           )}
 
-          {/* FAQ Quick Links */}
           <div className="mt-12 text-center">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h3>
             <div className="flex flex-wrap justify-center gap-3">
