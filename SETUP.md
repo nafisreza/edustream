@@ -18,32 +18,19 @@ cd edustream
 npm install
 ```
 
-### 3. Set Up MongoDB with Docker
+### 3. Start MongoDB and LiveKit with Docker Compose
 
-Run MongoDB in a Docker container:
+Start all services (MongoDB + LiveKit):
 ```bash
-docker run -d \
-  --name edustream-mongo \
-  -p 27017:27017 \
-  -v edustream-data:/data/db \
-  mongo:latest
+docker-compose up -d
 ```
 
-**For Windows PowerShell:**
-```powershell
-docker run -d `
-  --name edustream-mongo `
-  -p 27017:27017 `
-  -v edustream-data:/data/db `
-  mongo:latest
-```
-
-Verify MongoDB is running:
+Verify services are running:
 ```bash
 docker ps
 ```
 
-You should see `edustream-mongo` in the list.
+You should see `edustream-mongodb` and `edustream-livekit` containers running.
 
 ### 4. Build Shared Packages
 
@@ -70,11 +57,24 @@ cp apps/server/.env.example apps/server/.env
 The default configuration should work:
 ```env
 PORT=5000
+NODE_ENV=development
+
 MONGODB_URI=mongodb://localhost:27017/edustream
+
 JWT_SECRET=edustream-super-secret-jwt-key-2026
 JWT_EXPIRES_IN=7d
+
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-gmail-app-password
+
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=devkey
+LIVEKIT_URL=ws://localhost:7880
+
 ALLOWED_ORIGINS=http://localhost:3000
 ```
+
+**Important:** Update `GMAIL_USER` and `GMAIL_APP_PASSWORD` with your Gmail credentials for password reset emails. See [Gmail SMTP Setup](#gmail-smtp-setup) below.
 
 **Frontend (.env.local):**
 Navigate to `apps/web/` and create `.env.local`:
@@ -97,25 +97,44 @@ This will start:
 - Frontend on http://localhost:3000
 - Backend on http://localhost:5000
 
-### 7. Stop MongoDB (when needed)
+### 7. Stop Services (when needed)
 
 ```bash
-docker stop edustream-mongo
+docker-compose down
 ```
 
-### 8. Start MongoDB again
+### 8. Start Services Again
 
 ```bash
-docker start edustream-mongo
+docker-compose up -d
 ```
 
-### 9. Remove MongoDB container (if needed)
+### 9. Remove All Data (if needed)
 
 ```bash
-docker stop edustream-mongo
-docker rm edustream-mongo
-docker volume rm edustream-data
+docker-compose down -v
 ```
+
+---
+
+## Gmail SMTP Setup
+
+For password reset emails to work:
+
+1. **Create/Use Gmail Account** for your app
+2. **Enable 2FA**: https://myaccount.google.com/security
+3. **Generate App Password**:
+   - Go to: https://myaccount.google.com/apppasswords
+   - Select "Mail" and "Other (custom name)"
+   - Name it "EduStream"
+   - Copy the 16-character password
+4. **Update `.env`**:
+   ```env
+   GMAIL_USER=your-email@gmail.com
+   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+   ```
+
+---
 
 ## Troubleshooting
 
@@ -127,14 +146,19 @@ Get-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess | Stop-Proc
 ```
 
 ### MongoDB connection failed
-Check if MongoDB is running:
+Check if services are running:
 ```bash
-docker ps
+docker-compose ps
 ```
 
 Check MongoDB logs:
 ```bash
-docker logs edustream-mongo
+docker logs edustream-mongodb
+```
+
+Check LiveKit logs:
+```bash
+docker logs edustream-livekit
 ```
 
 ### Can't connect to backend from frontend
