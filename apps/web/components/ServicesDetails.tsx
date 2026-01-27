@@ -60,6 +60,20 @@ const services = [
       "Notifications: Stay informed with smart notifications that alert you to important messages without disrupting your workflow.",
     ],
   },
+  {
+    id: "recap",
+    name: "Recap",
+    image: "/recording_services_details.png",
+    description:
+      "Record sessions and get AI-powered summaries that capture key moments and insights for better learning outcomes.",
+    features: [
+      "High-quality recording: Capture video, audio, and screen sharing with professional-grade quality.",
+      "AI summaries: Get instant AI-generated summaries of key points and important moments.",
+      "Smart playback: Navigate recordings with chapter markers and searchable transcripts.",
+      "Meeting insights: Track attendance and participation metrics to understand student engagement.",
+      "Easy sharing: Share recordings and recaps with students instantly.",
+    ],
+  },
 ];
 
 export default function ServicesDetails() {

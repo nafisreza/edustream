@@ -25,6 +25,13 @@ const customerStories = [
     subtitle:
       "EduStream helps schools run structured online classes with strict role management, approval-based entry, and teacher-only controls ensuring students stay attentive and learning stays uninterrupted.",
   },
+  {
+    id: 4,
+    image: "/customer_journey_4.png",
+    title: "Students revisit lessons through shared whiteboards",
+    subtitle:
+      "Teachers review concepts and diagrams in real time using collaborative whiteboards, helping students quickly recap and clarify topics.",
+  },
 ];
 
 export default function CustomerJourney() {
