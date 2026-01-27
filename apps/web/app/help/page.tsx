@@ -676,94 +676,168 @@ export default function HelpPage() {
         </div>
       ) : (
         // Main Help Center - Full screen centered layout
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
-          <div className="w-full max-w-4xl">
-            {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
-                Help Center
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-700 font-medium">
-                How can we help you?
-              </p>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="mb-16">
-              <div className="max-w-2xl mx-auto relative">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search for help topics..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    className="w-full px-6 py-4 pl-14 pr-6 text-lg text-gray-900 bg-white border-2 border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-lg hover:shadow-xl transition-shadow"
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+        <>
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 via-blue-50 to-pink-50 px-4 py-16">
+            <div className="w-full max-w-4xl">
+              {/* Header */}
+              <div className="text-center mb-12">
+                <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ color: '#6B46C1' }}>
+                  Help Center
+                </h1>
+                <p className="text-xl md:text-2xl text-gray-700 font-medium">
+                  How can we help you?
+                </p>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="mb-16">
+                <div className="max-w-2xl mx-auto relative">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search for help topics..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      className="w-full px-6 py-4 pl-14 pr-6 text-lg text-gray-900 bg-white border-2 border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-lg hover:shadow-xl transition-shadow"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                      <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
                   </div>
+                  
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
+                      {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="w-full px-6 py-4 text-left hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-center">
+                            <svg className="h-5 w-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <span className="text-gray-700 font-medium">{suggestion}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Suggestions Dropdown */}
-                {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
-                    {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="w-full px-6 py-4 text-left hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-center">
-                          <svg className="h-5 w-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                          <span className="text-gray-700 font-medium">{suggestion}</span>
-                        </div>
-                      </button>
-                    ))}
+              </div>
+
+              {/* Help Categories */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {helpCategories.map((category, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200"
+                  >
+                    <div className="text-4xl mb-3">{category.icon}</div>
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">{category.title}</h3>
+                    <p className="text-gray-600">{category.description}</p>
                   </div>
-                )}
+                ))}
+              </div>
+
+              {/* Bottom Text */}
+              <div className="text-center mt-16">
+                <p className="text-gray-600 text-lg mb-3">
+                  Can't find what you're looking for?
+                </p>
+                <a 
+                  href="mailto:support@edustream.com"
+                  className="inline-flex items-center text-purple-600 hover:text-purple-800 font-semibold text-lg transition-colors"
+                >
+                  Contact our support team
+                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
               </div>
             </div>
-
-            {/* Help Categories */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {helpCategories.map((category, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200"
-                >
-                  <div className="text-4xl mb-3">{category.icon}</div>
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">{category.title}</h3>
-                  <p className="text-gray-600">{category.description}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Bottom Text */}
-            <div className="text-center mt-16">
-              <p className="text-gray-600 text-lg mb-3">
-                Can't find what you're looking for?
-              </p>
-              <a 
-                href="mailto:support@edustream.com"
-                className="inline-flex items-center text-purple-600 hover:text-purple-800 font-semibold text-lg transition-colors"
-              >
-                Contact our support team
-                <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </a>
-            </div>
           </div>
-        </div>
+
+          {/* Footer */}
+          <footer className="bg-gray-50 border-t border-gray-200 mt-16">
+            <div className="max-w-6xl mx-auto px-4 py-12">
+              <div className="grid md:grid-cols-3 gap-8 mb-8">
+                {/* Logo and Description */}
+                <div>
+                  <a href="/" className="inline-block mb-4">
+                    <img 
+                      src="/EduStreamLogo_purple.png" 
+                      alt="EduStream Logo" 
+                      className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                  <p className="text-gray-600">
+                    Transform learning with interactive streaming. Connect educators and learners in real-time sessions.
+                  </p>
+                </div>
+
+                {/* Quick Links */}
+                <div>
+                  <h3 className="text-xl font-bold mb-4 text-gray-900">Quick Links</h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <a href="/create-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Create Room
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/join-room" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Join Room
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/features" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Features
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Support */}
+                <div>
+                  <h3 className="text-xl font-bold mb-4 text-gray-900">Support</h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <a href="/help" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Help Center
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/contact" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Contact Us
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/privacy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                        Privacy Policy
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Copyright */}
+              <div className="border-t border-gray-200 pt-8 text-center">
+                <p className="text-gray-600">
+                  © 2026 EduStream. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </footer>
+        </>
       )}
     </main>
   );
