@@ -1,10 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import SideNav from "./SideNav";
 import Navbar from "./Navbar";
 
-const noSideNavRoutes = ["/", "/login", "/signup"];
+const noNavbarRoutes = ["/"];
 
 export default function PageLayout({
   children,
@@ -12,18 +11,12 @@ export default function PageLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showSideNav = !noSideNavRoutes.includes(pathname);
+  const showNavbar = !noNavbarRoutes.includes(pathname);
 
-  if (showSideNav) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <div className="flex flex-1 flex-col">
-          <main className="flex-1">{children}</main>
-        </div>
-      </div>
-    );
-  }
-
-  // Landing page and auth pages render their own structure
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {showNavbar && <Navbar />}
+      <main className={showNavbar ? "pt-16" : undefined}>{children}</main>
+    </div>
+  );
 }

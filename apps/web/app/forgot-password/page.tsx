@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { authApi } from "@/lib/auth";
-import Navbar from "@/components/Navbar";
 import { Mail } from "lucide-react";
 
 export default function ForgotPasswordPage() {
@@ -79,7 +78,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Navbar />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-sm border">
           <div className="text-center">
