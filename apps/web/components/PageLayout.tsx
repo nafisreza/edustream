@@ -17,7 +17,6 @@ export default function PageLayout({
   if (showSideNav) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <SideNav />
         <div className="flex flex-1 flex-col">
           <main className="flex-1">{children}</main>
         </div>
