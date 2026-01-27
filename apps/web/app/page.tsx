@@ -15,7 +15,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-white">
       {/* Gradient Container - Navbar + Hero + Services */}
       <div className="relative hero-gradient min-h-screen">
-        <Navbar />
+        <Navbar/>
         
         {/* Hero Section */}
         <section className="pb-20 sm:pb-20 lg:pb-24">

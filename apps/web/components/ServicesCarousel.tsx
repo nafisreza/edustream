@@ -26,7 +26,7 @@ export default function ServicesCarousel() {
     },
     {
       name: "Recap",
-      image: "/recap.webp",
+      image: "/recap.jpg",
       alt: "Recap",
     },
     {
