@@ -1,29 +1,20 @@
 'use client';
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, User as UserIcon, Eye, EyeOff } from "lucide-react";
+import { Users } from "lucide-react";
 import SideNav from "@/components/SideNav";
 
 export default function ProfilePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [showMeetingId, setShowMeetingId] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
-
-  // Generate Personal Meeting ID from user ID
-  const personalMeetingId = useMemo(() => {
-    if (!user?.id) return "*** *** ***";
-    // Take last 3 characters of user ID and pad if needed
-    const lastPart = user.id.slice(-3).padStart(3, '0');
-    return `*** *** ${lastPart}`;
-  }, [user?.id]);
 
   // Detect timezone
   const timeZone = useMemo(() => {
@@ -59,23 +50,11 @@ export default function ProfilePage() {
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-gray-50 pl-64 pt-16">
+    <div className="h-screen bg-gray-50 pl-64 pt-16 overflow-y-auto">
       <SideNav />
-      <div className="py-8">
+      <div className="pt-0 pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
-          {/* Privacy Banner */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex gap-3">
-              <Users className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-900">
-                When you join meetings, webinars, chats, or classrooms hosted on EduStream, your profile information, including your name and profile picture, may be visible to other participants or members. Your name and email address will also be visible to the{' '}
-                <span className="text-blue-600 underline cursor-pointer">account owner</span>
-                {' '}and host when you join meetings, webinars, chats, or classrooms on their account while you&apos;re signed in. The account owner and others in the meeting, webinar, chat, or classroom can share this information with apps and others.
-              </p>
-            </div>
-          </div>
-
           {/* Profile Header */}
           <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
             <div className="flex items-start justify-between">
@@ -156,33 +135,15 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Meeting Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Meeting</h2>
-            
-            <div className="flex items-center justify-between py-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-gray-500 block mb-1">Personal Meeting ID</label>
-                <p className="text-base text-gray-900 font-mono">
-                  {showMeetingId ? personalMeetingId.replace(/\*/g, 'X') : personalMeetingId}
-                </p>
-              </div>
-              <div className="flex items-center gap-4 ml-4">
-                <button
-                  onClick={() => setShowMeetingId(!showMeetingId)}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                  aria-label={showMeetingId ? "Hide meeting ID" : "Show meeting ID"}
-                >
-                  {showMeetingId ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-                <button className="text-sm font-medium text-[#6B46C1] hover:text-[#5B21B6] transition-colors">
-                  Edit
-                </button>
-              </div>
+          {/* Privacy Banner */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex gap-3">
+              <Users className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-900">
+                When you join meetings, webinars, chats, or classrooms hosted on EduStream, your profile information, including your name and profile picture, may be visible to other participants or members. Your name and email address will also be visible to the{' '}
+                <span className="text-blue-600 underline cursor-pointer">account owner</span>
+                {' '}and host when you join meetings, webinars, chats, or classrooms on their account while you&apos;re signed in. The account owner and others in the meeting, webinar, chat, or classroom can share this information with apps and others.
+              </p>
             </div>
           </div>
         </div>
