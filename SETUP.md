@@ -69,7 +69,7 @@ GMAIL_APP_PASSWORD=your-gmail-app-password
 
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=devkey
-LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_URL=http://localhost:7880
 
 ALLOWED_ORIGINS=http://localhost:3000
 ```
