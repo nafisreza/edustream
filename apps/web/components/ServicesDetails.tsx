@@ -11,11 +11,11 @@ const services = [
     description:
       "AI-first video conferencing for team collaboration lets you work together without friction using high-quality video, audio, and screen sharing, all built into EduStream.",
     features: [
-      "Unify how teams connect: High-quality video, audio, and screen sharing are all in one platform, so communication feels seamless.",
-      "Consolidate your tools: Replace scattered apps with an all-in-one solution that saves time, reduces costs, and keeps work in sync.",
-      "Support hybrid and remote learning: Keep even global classrooms engaged with reliable video conferencing and interactive features.",
-      "Keep workflows moving: From lectures to Q&A sessions to quick check-ins, EduStream helps educators cut friction and avoid lessons stalling.",
-      "Do more with AI: Built-in AI summarizes sessions, drafts follow-ups, and shares next steps, so your team spends more time teaching.",
+      "Unify how teams connect: High-quality video, audio, and screen sharing are all in one platform, so communication feels seamless and natural.",
+      "Consolidate your tools: Replace scattered apps with an all-in-one solution that saves time, reduces costs, and keeps work in sync across all devices.",
+      "Support hybrid and remote learning: Keep even global classrooms engaged with reliable video conferencing and interactive features that bridge distances.",
+      "Keep workflows moving: From lectures to Q&A sessions to quick check-ins, EduStream helps educators cut friction and avoid lessons stalling unexpectedly.",
+      "Do more with AI: Built-in AI summarizes sessions, drafts follow-ups, and shares next steps automatically, so your team spends more time teaching effectively.",
     ],
   },
   {
@@ -25,11 +25,11 @@ const services = [
     description:
       "A comprehensive virtual classroom solution designed for education, featuring real-time video, interactive tools, breakout rooms, and complete teacher control.",
     features: [
-      "Virtual classroom environment: Create dedicated spaces for your classes with persistent rooms and organized sessions.",
-      "Interactive learning tools: Engage students with polls, quizzes, hand raising, and real-time feedback mechanisms.",
-      "Breakout rooms: Facilitate group work and discussions with easy-to-manage breakout rooms for collaborative learning.",
-      "Attendance tracking: Monitor student participation and attendance automatically with detailed analytics.",
-      "Recording and playback: Record sessions for students who miss class or need to review material later.",
+      "Virtual classroom environment: Create dedicated spaces for your classes with persistent rooms and organized sessions that students can access easily.",
+      "Interactive learning tools: Engage students with polls, quizzes, hand raising, and real-time feedback mechanisms that make learning more dynamic.",
+      "Breakout rooms: Facilitate group work and discussions with easy-to-manage breakout rooms for collaborative learning and peer interaction.",
+      "Attendance tracking: Monitor student participation and attendance automatically with detailed analytics that help you understand engagement patterns.",
+      "Recording and playback: Record sessions for students who miss class or need to review material later, ensuring no one falls behind.",
     ],
   },
   {
@@ -39,11 +39,11 @@ const services = [
     description:
       "Interactive digital whiteboard for collaborative learning, featuring drawing tools, shapes, text, and real-time collaboration for teachers and students.",
     features: [
-      "Real-time collaboration: Multiple users can draw, write, and annotate simultaneously on the same canvas.",
-      "Rich drawing tools: Use pens, markers, shapes, text, and colors to create engaging visual content.",
-      "Save and share: Save whiteboard sessions and share them with students for review and reference.",
-      "Template library: Access pre-made templates for common educational scenarios and lesson plans.",
-      "Integration: Seamlessly integrate whiteboard sessions with your video meetings and classroom recordings.",
+      "Real-time collaboration: Multiple users can draw, write, and annotate simultaneously on the same canvas, making group work seamless and interactive.",
+      "Rich drawing tools: Use pens, markers, shapes, text, and colors to create engaging visual content that enhances understanding and retention.",
+      "Save and share: Save whiteboard sessions and share them with students for review and reference, creating a valuable learning resource library.",
+      "Template library: Access pre-made templates for common educational scenarios and lesson plans that save time and improve consistency.",
+      "Integration: Seamlessly integrate whiteboard sessions with your video meetings and classroom recordings for a complete learning experience.",
     ],
   },
   {
@@ -53,11 +53,25 @@ const services = [
     description:
       "Real-time messaging platform for seamless text-based communication between teachers and students during and outside class sessions.",
     features: [
-      "Real-time messaging: Instant text communication that keeps conversations flowing smoothly during live sessions and beyond.",
-      "Message history: Access complete chat logs and conversation history for review and reference at any time.",
-      "File sharing: Share documents, images, and other educational materials directly through the chat interface.",
-      "Private and group chats: Support both one-on-one conversations and group discussions for flexible communication.",
-      "Notifications: Stay informed with smart notifications that alert you to important messages without disrupting your workflow.",
+      "Real-time messaging: Instant text communication that keeps conversations flowing smoothly during live sessions and beyond the classroom.",
+      "Message history: Access complete chat logs and conversation history for review and reference at any time, ensuring important information is never lost.",
+      "File sharing: Share documents, images, and other educational materials directly through the chat interface, making collaboration effortless.",
+      "Private and group chats: Support both one-on-one conversations and group discussions for flexible communication that adapts to different needs.",
+      "Notifications: Stay informed with smart notifications that alert you to important messages without disrupting your workflow or teaching time.",
+    ],
+  },
+  {
+    id: "recap",
+    name: "Recap",
+    image: "/recording_services_details.png",
+    description:
+      "Record sessions and get AI-powered summaries that capture key moments and insights for better learning outcomes and improved student success.",
+    features: [
+      "High-quality recording: Capture video, audio, and screen sharing with professional-grade quality that ensures every detail is preserved clearly.",
+      "AI summaries: Get instant AI-generated summaries of key points and important moments that help students quickly understand session highlights.",
+      "Smart playback: Navigate recordings with chapter markers and searchable transcripts that make finding specific content fast and efficient.",
+      "Meeting insights: Track attendance and participation metrics to understand student engagement and identify areas that need more attention.",
+      "Easy sharing: Share recordings and recaps with students instantly, ensuring everyone has access to learning materials whenever they need them.",
     ],
   },
 ];

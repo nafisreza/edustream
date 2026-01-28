@@ -14,7 +14,6 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import Image from "next/image";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -39,21 +38,7 @@ export default function SideNav() {
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/EduStreamLogo_purple.png"
-            alt="EduStream Logo"
-            width={140}
-            height={40}
-            className="h-8 w-auto"
-            priority
-            unoptimized
-          />
-        </Link>
-      </div>
+    <div className="fixed left-0 top-16 z-40 flex h-[calc(100vh-4rem)] w-64 flex-col border-r border-gray-200 bg-white">
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">

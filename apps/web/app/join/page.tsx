@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -66,7 +65,6 @@ export default function JoinPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Navbar />
       <div className="flex flex-1 items-center justify-center px-4">
         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-sm border">
           <div className="text-center">
