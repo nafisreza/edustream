@@ -105,7 +105,7 @@ export default function ServicesDetails() {
               key={service.id}
               onClick={() => setActiveService(service)}
               className={`px-6 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeService.id === service.id
+                activeService?.id === service.id
                   ? "bg-[#6B46C1] text-white border-2 border-[#6B46C1]"
                   : "bg-white text-gray-700 border-2 border-gray-300 hover:border-[#6B46C1] hover:text-[#6B46C1]"
               }`}
@@ -120,10 +120,10 @@ export default function ServicesDetails() {
           {/* Left: Text Content */}
           <div className="space-y-6">
             <p className="text-lg text-gray-700 leading-relaxed">
-              {activeService.description}
+              {activeService?.description}
             </p>
             <ul className="space-y-4">
-              {activeService.features.map((feature, index) => (
+              {activeService?.features.map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <span className="text-[#6B46C1] mt-1">•</span>
                   <span className="text-gray-700">{feature}</span>
@@ -140,8 +140,8 @@ export default function ServicesDetails() {
           {/* Right: Image */}
           <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
             <Image
-              src={activeService.image}
-              alt={activeService.name}
+              src={activeService?.image || ""}
+              alt={activeService?.name || "Service"}
               fill
               className="object-cover"
             />
