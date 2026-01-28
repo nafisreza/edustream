@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // Common questions for auto-suggestions
@@ -785,7 +785,7 @@ const categoryContent: { [key: string]: { title: string; content: React.ReactNod
   }
 };
 
-export default function HelpPage() {
+function HelpPageContent() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -1121,5 +1121,13 @@ export default function HelpPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function HelpPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
+      <HelpPageContent />
+    </Suspense>
   );
 }
