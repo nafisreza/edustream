@@ -59,11 +59,9 @@ export default function ProfilePage() {
     .slice(0, 2);
 
   return (
-    <div className="flex mx-auto container bg-gray-50">
-      <div>
-        <SideNav/>
-      </div>
-      <div className="flex-1 py-8">
+    <div className="min-h-screen bg-gray-50 pl-64 pt-16">
+      <SideNav />
+      <div className="py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           {/* Privacy Banner */}

@@ -1,16 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import ServicesCarousel from "@/components/ServicesCarousel";
 import ServicesDetails from "@/components/ServicesDetails";
 import CustomerJourney from "@/components/CustomerJourney";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
+  const { user, isLoading } = useAuth();
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Gradient Container - Navbar + Hero + Services */}
       <div className="relative hero-gradient min-h-screen">
-        <Navbar />
+        <Navbar/>
         
         {/* Hero Section */}
         <section className="pb-20 sm:pb-20 lg:pb-24">
@@ -27,12 +32,29 @@ export default function Home() {
                   classroom controls, and a clean interface built for effective online learning.
                 </p>
                 <div className="flex justify-center">
-                  <Link
-                    href="/signup"
-                    className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-10 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                  >
-                    Let&apos;s get started!
-                  </Link>
+                  {isLoading ? null : user ? (
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Link
+                        href="/create"
+                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
+                      >
+                        Create Room
+                      </Link>
+                      <Link
+                        href="/join"
+                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
+                      >
+                        Join Room
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link
+                      href="/signup"
+                      className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-10 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
+                    >
+                      Let&apos;s get started!
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
