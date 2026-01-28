@@ -51,7 +51,8 @@ export default function CustomerJourney() {
         </div>
 
         {/* Cards Container */}
-        <div 
+      <div className="flex justify-center">
+          <div 
           ref={containerRef}
           className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory scroll-smooth px-2"
           onMouseLeave={() => {
@@ -124,6 +125,7 @@ export default function CustomerJourney() {
             );
           })}
         </div>
+      </div>
       </div>
     </section>
   );

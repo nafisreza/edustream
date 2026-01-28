@@ -231,7 +231,7 @@ export const getRoomToken = async (req: AuthenticatedRequest, res: Response): Pr
 
     res.status(200).json({
       token,
-      url: process.env.LIVEKIT_URL || 'ws://localhost:7880',
+      url: process.env.LIVEKIT_URL || 'http://localhost:7880',
       roomName: room.roomId,
       participantName: userName,
       isHost,
