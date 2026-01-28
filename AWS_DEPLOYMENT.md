@@ -83,7 +83,7 @@ GMAIL_APP_PASSWORD=your-app-password
 
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=devkey
-LIVEKIT_URL=ws://your-ec2-public-ip:7880
+LIVEKIT_URL=http://your-ec2-public-ip:7880
 
 ALLOWED_ORIGINS=https://your-amplify-domain.amplifyapp.com
 ```
