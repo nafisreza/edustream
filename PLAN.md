@@ -18,29 +18,37 @@
   - ✅ Room creation flow (`/create` → API → redirect to `/room/:id`)
   - ✅ Room joining flow (`/join` → validate → join API → redirect to `/room/:id`)
   - ✅ Socket.io signaling handlers (join-room, leave-room, offer/answer, ICE candidates)
-- ✅ **Phase 3 Functionally Complete**: Video/audio streaming via LiveKit pre-built components
-  - ✅ Room page (`/room/[id]/page.tsx`) uses `@livekit/components-react`'s `VideoConference` component
+- ✅ **Phase 3 Functionally Complete**: Video/audio streaming via custom LiveKit components
+  - ✅ `CustomVideoConference.tsx` — custom layout using LiveKit primitives (`GridLayout`, `ParticipantTile`)
   - ✅ `LiveKitRoom` wraps the session with token + server URL fetched on load
   - ✅ `RoomAudioRenderer` handles spatial audio
-  - ✅ `RoomHeader` overlay displays room code with copy-to-clipboard
-  - ⚠️  Custom `VideoGrid`, `MediaControls`, and `WebRTCContext` not built — using LiveKit's built-in UI instead
-  - ❌ Waiting room approval flow (socket-based host approval) not implemented
-- ✅ **Phase 4 Complete**: Classroom management features
+  - ✅ Room code moved into `CustomControlBar` (left side) — `RoomHeader` removed
+  - ⚠️  Waiting room approval flow (socket-based host approval) not implemented
+- ✅ **Phase 4 Complete**: Classroom management features (fully custom UI)
   - ✅ `SocketContext.tsx` — Socket.io provider wrapping each room session
-  - ✅ `ClassroomOverlay.tsx` — floating toolbar above LiveKit controls
-  - ✅ `ChatPanel.tsx` — real-time text chat with unread badge
-  - ✅ `RaiseHandButton.tsx` — students raise/lower hand; teacher receives toast notification
-  - ✅ `TeacherControls.tsx` — participant list, Mute All, per-user kick, hand acknowledgement
-  - ✅ Role-based visibility (teacher controls only shown to host)
-  - ✅ Student receives toast on `muted-by-host` / redirected on `kicked-from-room`
-  - ✅ Backend socket handlers for `lower-hand` added
-  - ⚠️  Active speaker detection skipped — LiveKit's `VideoConference` highlights active speakers natively
+  - ✅ `CustomControlBar.tsx` — full-width bottom bar: room code (left), mic/camera/screen share/raise hand (center), leave + end (right)
+  - ✅ `CustomVideoConference.tsx` — custom grid layout, no LiveKit built-in controls or chat
+  - ✅ `ClassroomOverlay.tsx` — side-effects only: handles `muted-by-host`, `kicked-from-room`, `meeting-ended`
+  - ✅ `RoomSidebar.tsx` — unified right sidebar with Participants and Chat tabs, open by default for all
+  - ✅ Participants tab: sorted (host → hand-raised → alphabetical), 3-dot hover menu for teacher actions (mute, lower hand, remove), `(Host)` label, hand icon inline
+  - ✅ Chat tab: real-time socket messaging, unread badge, auto-scroll
+  - ✅ Raise hand button in control bar (students only); hand-raised state synced to sidebar sorting
+  - ✅ Mute All button (teacher): actually disables mic via LiveKit `setMicrophoneEnabled(false)`
+  - ✅ End Meeting button (host only): emits `end-meeting` → marks room inactive in DB → broadcasts `meeting-ended` → all participants disconnected and redirected
+  - ✅ Leave room: single toast fix (no double toast), `handleDisconnect` is redirect-only
+  - ✅ Screen share state synced via `isScreenShareEnabled` from `useLocalParticipant` (browser stop-share button works correctly)
+  - ✅ Role-based room creation: students blocked at UI (no Create Room link), page-level redirect, and backend 403 guard
+  - ✅ Backend socket handlers: `lower-hand`, `mute-user`, `kick-user`, `end-meeting`
+  - ⚠️  Active speaker detection skipped — LiveKit natively highlights active speakers
 - ❌ **Phase 5**: Interactive whiteboard — not started
-- ❌ **Phase 6**: Screen sharing custom UI, connection quality indicator, room settings — not started
-- ❌ **Phase 7**: UI/UX polish, accessibility, error handling, responsive design — not started
+- ❌ **Phase 6**: Connection quality indicator, room settings — not started
+  - ✅ Screen sharing button — done (in `CustomControlBar`)
+  - ✅ Participant list sidebar — done (`RoomSidebar`)
+  - ✅ Chat — done (`RoomSidebar` chat tab)
+- ❌ **Phase 7**: UI/UX polish, accessibility, responsive design — not started
 - 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~65% (Backend + Auth + LiveKit streaming + Classroom controls complete)**
+**Estimated Completion: ~72% (Backend + Auth + LiveKit streaming + Full classroom management UI complete)**
 
 **Last Updated: March 1, 2026**
 
@@ -253,6 +261,7 @@ Frontend ([apps/web](apps/web)):
 - Check user role (Teacher vs Student) from JWT or room state
 - Restrict actions like "mute all", "remove participant" to teachers
 - Send role information to frontend on room join
+- ✅ **Students blocked from creating rooms** — UI guard (navbar, create page redirect) + backend 403
 
 ### ✅ Step 4.2: Add "Raise Hand" Feature
 - Create button in student UI
@@ -260,36 +269,41 @@ Frontend ([apps/web](apps/web)):
 - Show notification toast on teacher's screen
 - Display hand icon overlay on student's video tile
 - Teacher can acknowledge (clear the hand)
+- ✅ Raise hand button integrated into `CustomControlBar` (students only), yellow highlight when active
 
 ### ✅ Step 4.3: Build Teacher Control Panel
-- Create [apps/web/components/TeacherControls.tsx](apps/web/components/TeacherControls.tsx)
-- "Mute All" button: Socket event broadcasts to all students
-- Participant list with individual actions:
-  - Mute individual student
-  - Remove from room
-- Host-only UI visibility
+- ✅ `RoomSidebar.tsx` — Participants tab with 3-dot hover menu per participant (Mute / Lower hand / Remove)
+- ✅ "Mute All" button in sidebar participants tab (teacher only)
+- ✅ Host-only UI visibility for all action controls
 
 ### ✅ Step 4.4: Implement "Mute All" Functionality
 - Teacher clicks "Mute All"
 - Socket event: `mute-all` → server → all students
-- Force mute audio tracks on student clients
-- Optionally disable unmute for students
-- Show "Muted by teacher" indicator
+- ✅ Actually disables mic via `localParticipant.setMicrophoneEnabled(false)` (not just cosmetic)
+- Show "Muted by teacher" toast notification
 
 ### ✅ Step 4.5: Add Participant Removal
 - Teacher clicks "Remove" on participant
 - Socket event: `kick-user` with userId
 - Server disconnects student's socket
-- Student sees "Removed from room" message
-- Redirect student to home page
+- Student sees "Removed from room" toast then disconnects via `room.disconnect()`
 
-### ⚠️ Step 4.6: Implement Active Speaker Detection
+### ✅ Step 4.6: Custom Control Bar
+- ✅ `CustomControlBar.tsx` — full-width dark bar replacing LiveKit's default `ControlBar`
+  - Left: room code + copy button
+  - Center: Mic, Camera, Screen Share, Raise Hand (students only)
+  - Right: End Meeting (host only, dark red) + Leave (red)
+- ✅ Screen share state derived from `isScreenShareEnabled` (LiveKit hook) — browser stop-share syncs correctly
+- ✅ End Meeting: emits `end-meeting` socket → DB marks room inactive → `meeting-ended` broadcast → all participants redirect
+- ✅ Leave room: single toast, no double notification
+
+### ✅ Step 4.7: Unified Room Sidebar
+- ✅ `RoomSidebar.tsx` — right sidebar with Participants and Chat tabs, open by default
+- ✅ Participants sorted: host first → hand-raised → alphabetical
+- ✅ Chat tab: real-time socket messaging, unread badge, auto-scroll
+
+### ⚠️ Step 4.8: Active Speaker Detection
 > **Skipped** — LiveKit's `VideoConference` component highlights the active speaker natively.
-- Monitor audio levels using Web Audio API
-- Create AudioContext and AnalyserNode for each peer
-- Detect volume threshold
-- Highlight active speaker's video with border
-- Update UI every 100ms
 
 ---
 
@@ -334,13 +348,7 @@ Recommendation: tldraw or Fabric.js for speed
 ## ❌ Phase 6: Additional Features & Polish [NOT STARTED]
 
 ### ✅ Step 6.1: Add Text Chat
-> **Done early in Phase 4** — `ChatPanel.tsx` built with socket-based real-time messaging and unread badge.
-
-- Create [apps/web/components/ChatPanel.tsx](apps/web/components/ChatPanel.tsx)
-- Socket events: `send-message`, `receive-message`
-- Display chat messages with timestamps
-- Teacher can disable chat for students
-- Optionally save chat logs to MongoDB
+> **Done in Phase 4** — Chat tab in `RoomSidebar.tsx` with socket-based real-time messaging and unread badge.
 
 ### ✅ Step 6.2: Implement Notification System
 > **Done** — `react-hot-toast` already integrated across the app for join/leave, hand raised, muted, kicked events.
@@ -353,53 +361,8 @@ Recommendation: tldraw or Fabric.js for speed
   - Connection issues
 - Configure toast position and duration
 
-### Step 6.3: Add Screen Sharing
-
-**Implementation:**
-- Use navigator.mediaDevices.getDisplayMedia() to capture screen
-- Create "Share Screen" button in MediaControls
-- Add "Stop Sharing" button that appears during sharing
-
-**Critical: Screen Share is a Separate Stream**
-- ⚠️ `getDisplayMedia()` creates a **new MediaStream**, NOT a track from your existing camera stream
-- **Two approaches to handle this:**
-
-**Approach 1: Replace Video Track (Recommended for simplicity)**
-```javascript
-// Stop camera, publish screen instead
-await room.localParticipant.unpublishTrack(cameraTrack);
-const screenStream = await navigator.mediaDevices.getDisplayMedia();
-const screenTrack = screenStream.getVideoTracks()[0];
-await room.localParticipant.publishTrack(screenTrack);
-
-// When stopping: switch back to camera
-await room.localParticipant.unpublishTrack(screenTrack);
-const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-const newCameraTrack = cameraStream.getVideoTracks()[0];
-await room.localParticipant.publishTrack(newCameraTrack);
-```
-
-**Approach 2: Publish Additional Track (Better UX)**
-- Publish screen share as a **second video track** alongside camera
-- Participants see both your face AND your screen
-- Display screen in larger tile, camera in small picture-in-picture
-- LiveKit supports multiple tracks per participant
-- UI shows two video tiles for the screen sharer
-
-**Handle Screen Share Ended Event:**
-```javascript
-screenTrack.addEventListener('ended', () => {
-  // User clicked "Stop Sharing" in browser UI
-  // Clean up and revert to camera
-  handleStopScreenShare();
-});
-```
-
-**UI Considerations:**
-- Show "Screen" badge on video tile during sharing
-- Enlarge screen share tile (main view)
-- Minimize other participants (side bar)
-- Teacher can share screen even if camera is off
+### ✅ Step 6.3: Screen Sharing
+> **Done in Phase 4** — Screen share toggle in `CustomControlBar.tsx` using `localParticipant.setScreenShareEnabled()`. State derived from `isScreenShareEnabled` LiveKit hook so browser-native stop-share button syncs correctly. LiveKit publishes screen share as a second video track alongside camera automatically.
 
 ### Step 6.4: Implement Connection Quality Indicator
 - Monitor RTCPeerConnection.getStats()
@@ -415,12 +378,8 @@ screenTrack.addEventListener('ended', () => {
   - Recording enabled (future feature)
 - Save settings in database
 
-### Step 6.6: Build Participant List Sidebar
-- Show all participants with status icons
-- Display role (Teacher/Student)
-- Show mic/camera status
-- Quick actions (mute, remove)
-- Search/filter participants
+### ✅ Step 6.6: Build Participant List Sidebar
+> **Done in Phase 4** — `RoomSidebar.tsx` with Participants tab: sorted list (host → hand-raised → alpha), role labels, 3-dot hover menu for teacher actions, hand icon inline.
 
 ---
 
@@ -561,9 +520,10 @@ Start with this sequence for fastest path to working prototype:
 3. ✅ Create room creation/joining (Step 2.4-2.6)
 4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **done via LiveKit**
 5. ✅ Add teacher controls (Step 4.2-4.5)
-6. ❌ Implement whiteboard (Step 5.1-5.4) ← **NEXT UP**
-7. ❌ Polish and test (Step 7.1-7.4)
-8. ❌ Deploy (Step 8.1-8.3)
+6. ✅ Custom control bar, sidebar, end meeting, role guards (Step 4.6-4.7)
+7. ❌ Implement whiteboard (Step 5.1-5.4) ← **NEXT UP**
+8. ❌ Polish and test (Step 7.1-7.4)
+9. ❌ Deploy (Step 8.1-8.3)
 
 Skip optional features initially: OAuth, chat, screen sharing, advanced analytics.
 
