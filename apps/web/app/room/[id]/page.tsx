@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
-import RoomHeader from "@/components/RoomHeader";
-import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
+import { SocketProvider } from "@/contexts/SocketContext";
+import ClassroomOverlay from "@/components/ClassroomOverlay";
+import CustomVideoConference from "@/components/CustomVideoConference";
+import RoomSidebar from "@/components/RoomSidebar";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
 import "@livekit/components-styles/index.css";
 
@@ -23,6 +26,8 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [roomData, setRoomData] = useState<any>(null);
   const [livekitToken, setLivekitToken] = useState<string>("");
   const [livekitUrl, setLivekitUrl] = useState<string>("");
+  const [isHost, setIsHost] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       });
       setLivekitToken(tokenResponse.token);
       setLivekitUrl(tokenResponse.url);
+      setIsHost(tokenResponse.isHost);
     } catch (error: any) {
       console.error('Failed to load room:', error);
       if (error.response?.status === 404) {
@@ -75,8 +81,7 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const handleDisconnect = () => {
     console.log('Disconnected from room');
-    toast.success("Left the room");
-    router.push("/");
+    router.push('/');
   };
 
   const handleError = (error: Error) => {
@@ -95,21 +100,47 @@ export default function RoomPage({ params }: RoomPageProps) {
   if (!user || !roomData || !livekitToken) return null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white relative">
-      <RoomHeader roomId={roomId} roomName={roomData.name} />
-      <LiveKitRoom
-        token={livekitToken}
-        serverUrl={livekitUrl}
-        connect={true}
-        video={{ resolution: VideoPresets.h720.resolution }}
-        audio={true}
-        onDisconnected={handleDisconnect}
-        onError={handleError}
-        data-lk-theme="default"
-        style={{ height: '100vh' }}
-      >
-        <VideoConference />
-      </LiveKitRoom>
-    </div>
+    <SocketProvider
+      roomId={roomId}
+      userId={user.id}
+      name={user.name}
+      role={isHost ? 'host' : 'participant'}
+    >
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        {/* Video area */}
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          <LiveKitRoom
+            token={livekitToken}
+            serverUrl={livekitUrl}
+            connect={true}
+            video={{ resolution: VideoPresets.h720.resolution }}
+            audio={true}
+            onDisconnected={handleDisconnect}
+            onError={handleError}
+            data-lk-theme="default"
+            style={{ height: '100vh' }}
+          >
+            <CustomVideoConference
+              roomId={roomId}
+              userId={user.id}
+              userName={user.name}
+              isHost={isHost}
+            />
+            <RoomAudioRenderer />
+            <ClassroomOverlay />
+          </LiveKitRoom>
+        </div>
+
+        {/* Sidebar — participants + chat, visible to everyone */}
+        <RoomSidebar
+          roomId={roomId}
+          userId={user.id}
+          userName={user.name}
+          isHost={isHost}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen((v) => !v)}
+        />
+      </div>
+    </SocketProvider>
   );
 }

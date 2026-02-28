@@ -82,18 +82,20 @@ export default function Navbar() {
         <div className="flex items-center gap-4 ml-auto">
           {user ? (
             <>
-              <Link
-                href="/create"
-                className={`text-sm font-medium transition-colors ${
-                  isLandingPage
-                    ? isScrolled
-                      ? "text-gray-700 hover:text-gray-900"
-                      : "text-white hover:text-white/80"
-                    : "text-gray-700 hover:text-gray-900"
-                }`}
-              >
-                Create Room
-              </Link>
+              {user.role === 'teacher' && (
+                <Link
+                  href="/create"
+                  className={`text-sm font-medium transition-colors ${
+                    isLandingPage
+                      ? isScrolled
+                        ? "text-gray-700 hover:text-gray-900"
+                        : "text-white hover:text-white/80"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
+                >
+                  Create Room
+                </Link>
+              )}
               <Link
                 href="/join"
                 className={`text-sm font-medium transition-colors ${

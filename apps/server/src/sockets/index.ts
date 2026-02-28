@@ -1,4 +1,5 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { Room } from '../models/Room.model';
 
 interface RoomState {
   roomId: string;
@@ -111,8 +112,22 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       socket.to(roomId).emit('hand-raised', { userId, name });
     });
 
+    socket.on('lower-hand', ({ roomId, userId, name }) => {
+      socket.to(roomId).emit('hand-lowered', { userId, name });
+    });
+
     socket.on('mute-all', ({ roomId }) => {
       socket.to(roomId).emit('muted-by-host');
+    });
+
+    socket.on('mute-user', ({ roomId, targetUserId }) => {
+      const room = activeRooms.get(roomId);
+      if (room) {
+        const targetParticipant = room.participants.get(targetUserId);
+        if (targetParticipant) {
+          io.to(targetParticipant.socketId).emit('muted-by-host');
+        }
+      }
     });
 
     socket.on('kick-user', ({ roomId, targetUserId }) => {
@@ -124,6 +139,26 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           handleLeaveRoom(socket, roomId, targetUserId);
         }
       }
+    });
+
+    // End meeting — host only: mark room inactive in DB, evict all participants
+    socket.on('end-meeting', async ({ roomId }) => {
+      try {
+        await Room.findOneAndUpdate({ roomId }, { isActive: false });
+      } catch (err) {
+        console.error('Failed to mark room inactive:', err);
+      }
+
+      // Notify all OTHER participants to leave
+      socket.to(roomId).emit('meeting-ended');
+
+      // Clean up socket room state
+      const activeRoom = activeRooms.get(roomId);
+      if (activeRoom) {
+        activeRooms.delete(roomId);
+      }
+
+      console.log(`🔴 Meeting ${roomId} ended by host`);
     });
 
     // Whiteboard events

@@ -18,6 +18,10 @@ export default function CreatePage() {
       toast.error("Please login to create a room");
       router.push("/login");
     }
+    if (!isLoading && user && user.role !== 'teacher') {
+      toast.error("Only teachers can create rooms");
+      router.push("/join");
+    }
   }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +55,7 @@ export default function CreatePage() {
     );
   }
 
-  if (!user) return null;
+  if (!user || user.role !== 'teacher') return null;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

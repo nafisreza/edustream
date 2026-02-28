@@ -25,13 +25,22 @@
   - ✅ `RoomHeader` overlay displays room code with copy-to-clipboard
   - ⚠️  Custom `VideoGrid`, `MediaControls`, and `WebRTCContext` not built — using LiveKit's built-in UI instead
   - ❌ Waiting room approval flow (socket-based host approval) not implemented
-- ❌ **Phase 4**: Classroom management features (raise hand, mute all, teacher controls) — not started
+- ✅ **Phase 4 Complete**: Classroom management features
+  - ✅ `SocketContext.tsx` — Socket.io provider wrapping each room session
+  - ✅ `ClassroomOverlay.tsx` — floating toolbar above LiveKit controls
+  - ✅ `ChatPanel.tsx` — real-time text chat with unread badge
+  - ✅ `RaiseHandButton.tsx` — students raise/lower hand; teacher receives toast notification
+  - ✅ `TeacherControls.tsx` — participant list, Mute All, per-user kick, hand acknowledgement
+  - ✅ Role-based visibility (teacher controls only shown to host)
+  - ✅ Student receives toast on `muted-by-host` / redirected on `kicked-from-room`
+  - ✅ Backend socket handlers for `lower-hand` added
+  - ⚠️  Active speaker detection skipped — LiveKit's `VideoConference` highlights active speakers natively
 - ❌ **Phase 5**: Interactive whiteboard — not started
-- ❌ **Phase 6**: Chat panel, screen sharing custom UI, notifications, connection quality — not started
+- ❌ **Phase 6**: Screen sharing custom UI, connection quality indicator, room settings — not started
 - ❌ **Phase 7**: UI/UX polish, accessibility, error handling, responsive design — not started
 - 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~52% (Backend + Auth + LiveKit streaming complete)**
+**Estimated Completion: ~65% (Backend + Auth + LiveKit streaming + Classroom controls complete)**
 
 **Last Updated: March 1, 2026**
 
@@ -237,22 +246,22 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## ❌ Phase 4: Classroom Management Features [NOT STARTED]
+## ✅ Phase 4: Classroom Management Features [COMPLETE]
 
-### Step 4.1: Implement Role-Based Permissions
+### ✅ Step 4.1: Implement Role-Based Permissions
 - Create permission middleware in backend
 - Check user role (Teacher vs Student) from JWT or room state
 - Restrict actions like "mute all", "remove participant" to teachers
 - Send role information to frontend on room join
 
-### Step 4.2: Add "Raise Hand" Feature
+### ✅ Step 4.2: Add "Raise Hand" Feature
 - Create button in student UI
 - Socket event: `raise-hand` (student → server → host)
 - Show notification toast on teacher's screen
 - Display hand icon overlay on student's video tile
 - Teacher can acknowledge (clear the hand)
 
-### Step 4.3: Build Teacher Control Panel
+### ✅ Step 4.3: Build Teacher Control Panel
 - Create [apps/web/components/TeacherControls.tsx](apps/web/components/TeacherControls.tsx)
 - "Mute All" button: Socket event broadcasts to all students
 - Participant list with individual actions:
@@ -260,21 +269,22 @@ Frontend ([apps/web](apps/web)):
   - Remove from room
 - Host-only UI visibility
 
-### Step 4.4: Implement "Mute All" Functionality
+### ✅ Step 4.4: Implement "Mute All" Functionality
 - Teacher clicks "Mute All"
 - Socket event: `mute-all` → server → all students
 - Force mute audio tracks on student clients
 - Optionally disable unmute for students
 - Show "Muted by teacher" indicator
 
-### Step 4.5: Add Participant Removal
+### ✅ Step 4.5: Add Participant Removal
 - Teacher clicks "Remove" on participant
 - Socket event: `kick-user` with userId
 - Server disconnects student's socket
 - Student sees "Removed from room" message
 - Redirect student to home page
 
-### Step 4.6: Implement Active Speaker Detection
+### ⚠️ Step 4.6: Implement Active Speaker Detection
+> **Skipped** — LiveKit's `VideoConference` component highlights the active speaker natively.
 - Monitor audio levels using Web Audio API
 - Create AudioContext and AnalyserNode for each peer
 - Detect volume threshold
@@ -283,7 +293,7 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## ❌ Phase 5: Interactive Whiteboard [NOT STARTED]
+## ❌ Phase 5: Interactive Whiteboard [NOT STARTED — NEXT UP]
 
 ### Step 5.1: Choose Whiteboard Library
 Options:
@@ -323,14 +333,18 @@ Recommendation: tldraw or Fabric.js for speed
 
 ## ❌ Phase 6: Additional Features & Polish [NOT STARTED]
 
-### Step 6.1: Add Text Chat
+### ✅ Step 6.1: Add Text Chat
+> **Done early in Phase 4** — `ChatPanel.tsx` built with socket-based real-time messaging and unread badge.
+
 - Create [apps/web/components/ChatPanel.tsx](apps/web/components/ChatPanel.tsx)
 - Socket events: `send-message`, `receive-message`
 - Display chat messages with timestamps
 - Teacher can disable chat for students
 - Optionally save chat logs to MongoDB
 
-### Step 6.2: Implement Notification System
+### ✅ Step 6.2: Implement Notification System
+> **Done** — `react-hot-toast` already integrated across the app for join/leave, hand raised, muted, kicked events.
+
 - Install react-hot-toast or sonner
 - Show toasts for:
   - User joined/left room
@@ -545,9 +559,9 @@ Start with this sequence for fastest path to working prototype:
 1. ✅ Set up backend server (Step 1.1-1.4)
 2. ✅ Implement basic authentication (Step 1.5-1.6)
 3. ✅ Create room creation/joining (Step 2.4-2.6)
-4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **CORE FEATURE — done via LiveKit**
-5. ❌ Add teacher controls (Step 4.2-4.5) ← **NEXT UP**
-6. ❌ Implement whiteboard (Step 5.1-5.4)
+4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **done via LiveKit**
+5. ✅ Add teacher controls (Step 4.2-4.5)
+6. ❌ Implement whiteboard (Step 5.1-5.4) ← **NEXT UP**
 7. ❌ Polish and test (Step 7.1-7.4)
 8. ❌ Deploy (Step 8.1-8.3)
 

@@ -20,6 +20,11 @@ export const createRoom = async (req: AuthenticatedRequest, res: Response): Prom
         return;
       }
 
+      if (req.user?.role !== 'teacher') {
+        res.status(403).json({ message: 'Only teachers can create rooms' });
+        return;
+      }
+
       // Generate unique room ID
       const roomId = generateRoomId();
 
