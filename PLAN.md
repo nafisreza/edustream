@@ -7,15 +7,33 @@
   - ✅ MongoDB database with Docker
   - ✅ JWT cookie-based authentication
   - ✅ Password reset with Gmail OTP
-  - ✅ Room API endpoints (create, join, close, leave)
+  - ✅ Room API endpoints (create, join, close, leave, get token)
   - ✅ Profile page and navigation
   - ✅ Team setup documentation
-- ❌ WebRTC: Not implemented
-- ❌ Video/Audio streaming: Not started
-- ❌ Whiteboard: Not implemented
-- ❌ Classroom controls: Not started
+- ✅ **Phase 2 Complete**: WebRTC infrastructure and room management
+  - ✅ LiveKit server running in Docker (`docker-compose.yml` + `livekit.yaml`)
+  - ✅ `livekit-client` (frontend) and `livekit-server-sdk` (backend) installed
+  - ✅ `generateLiveKitToken` utility with role-based permissions (host/participant)
+  - ✅ `GET /api/rooms/:id/token` endpoint returning LiveKit JWT + server URL
+  - ✅ Room creation flow (`/create` → API → redirect to `/room/:id`)
+  - ✅ Room joining flow (`/join` → validate → join API → redirect to `/room/:id`)
+  - ✅ Socket.io signaling handlers (join-room, leave-room, offer/answer, ICE candidates)
+- ✅ **Phase 3 Functionally Complete**: Video/audio streaming via LiveKit pre-built components
+  - ✅ Room page (`/room/[id]/page.tsx`) uses `@livekit/components-react`'s `VideoConference` component
+  - ✅ `LiveKitRoom` wraps the session with token + server URL fetched on load
+  - ✅ `RoomAudioRenderer` handles spatial audio
+  - ✅ `RoomHeader` overlay displays room code with copy-to-clipboard
+  - ⚠️  Custom `VideoGrid`, `MediaControls`, and `WebRTCContext` not built — using LiveKit's built-in UI instead
+  - ❌ Waiting room approval flow (socket-based host approval) not implemented
+- ❌ **Phase 4**: Classroom management features (raise hand, mute all, teacher controls) — not started
+- ❌ **Phase 5**: Interactive whiteboard — not started
+- ❌ **Phase 6**: Chat panel, screen sharing custom UI, notifications, connection quality — not started
+- ❌ **Phase 7**: UI/UX polish, accessibility, error handling, responsive design — not started
+- 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~35% (Backend + Auth complete)**
+**Estimated Completion: ~52% (Backend + Auth + LiveKit streaming complete)**
+
+**Last Updated: March 1, 2026**
 
 ---
 
@@ -71,21 +89,21 @@ Install in [apps/server/package.json](apps/server/package.json):
 
 ---
 
-## Phase 2: WebRTC Infrastructure & Room Management
+## ✅ Phase 2: WebRTC Infrastructure & Room Management [COMPLETE]
 
-### Step 2.1: Install WebRTC Dependencies
+### ✅ Step 2.1: Install WebRTC Dependencies
 Frontend ([apps/web](apps/web)):
 - socket.io-client (real-time communication)
 - **LiveKit** (Recommended for faster development)
   - livekit-client (frontend)
   - livekit-server-sdk (backend)
 
-### Step 2.2: Configure STUN/TURN Servers
+### ✅ Step 2.2: Configure STUN/TURN Servers
 - Add Google's public STUN server: stun:stun.l.google.com:19302
 - Configure in environment variables
 - Create ICE servers configuration object
 
-### Step 2.3: Build SFU Server Architecture
+### ✅ Step 2.3: Build SFU Server Architecture
 
 **If using LiveKit:**
 - Install LiveKit server (Docker)
@@ -100,20 +118,20 @@ Frontend ([apps/web](apps/web)):
 - Better bandwidth management
 - Simulcast support (multiple quality layers)
 
-### Step 2.4: Create Room API Endpoints
+### ✅ Step 2.4: Create Room API Endpoints
 - POST /api/rooms/create: Generate unique room ID, save to database
 - GET /api/rooms/:id: Verify room exists
 - POST /api/rooms/:id/join: Add participant to waiting room
 - DELETE /api/rooms/:id: Close room (host only)
 
-### Step 2.5: Implement Room Creation Flow
+### ✅ Step 2.5: Implement Room Creation Flow
 - Update [apps/web/app/create/page.tsx](apps/web/app/create/page.tsx):
   - Call POST /api/rooms/create with room name/description
   - Receive generated room ID
   - Redirect to [apps/web/app/room/[id]/page.tsx](apps/web/app/room/[id]/page.tsx) with host privileges
 - Store host status in state management
 
-### Step 2.6: Implement Room Joining Flow
+### ✅ Step 2.6: Implement Room Joining Flow
 - Update [apps/web/app/join/page.tsx](apps/web/app/join/page.tsx):
   - Validate room ID with GET /api/rooms/:id
   - Prompt for student name
@@ -121,7 +139,7 @@ Frontend ([apps/web](apps/web)):
   - Wait for host approval (socket event)
   - Redirect to room on approval
 
-### Step 2.7: Build Waiting Room Feature
+### ❌ Step 2.7: Build Waiting Room Feature
 - Create socket event: `join-request` (student → server → host)
 - Host receives notification with student name
 - Create approval UI component in room page
@@ -130,9 +148,11 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## Phase 3: WebRTC Video/Audio Streaming
+## ✅ Phase 3: WebRTC Video/Audio Streaming [FUNCTIONALLY COMPLETE — using LiveKit pre-built UI]
 
-### Step 3.1: Create WebRTC Context Provider
+### ⚠️ Step 3.1: Create WebRTC Context Provider
+> **Skipped** — `@livekit/components-react` `VideoConference` component handles this internally.
+
 - Create [apps/web/contexts/WebRTCContext.tsx](apps/web/contexts/WebRTCContext.tsx)
 - Initialize LiveKit Room
 - Manage participant tracks: Map<userId, RemoteTrack[]>
@@ -140,14 +160,18 @@ Frontend ([apps/web](apps/web)):
 - Provide functions: toggleMute, toggleVideo, publishTrack, unpublishTrack
 - Handle room events: participant joined/left, track subscribed/unsubscribed
 
-### Step 3.2: Request Camera/Microphone Access
+### ⚠️ Step 3.2: Request Camera/Microphone Access
+> **Handled automatically** by LiveKit's `VideoConference` component.
+
 - Use navigator.mediaDevices.getUserMedia() API
 - Request video (720p) and audio permissions
 - Handle permission errors gracefully
 - Store local stream in context
 - Display local video preview
 
-### Step 3.3: Implement Media Publishing & Subscription Logic
+### ⚠️ Step 3.3: Implement Media Publishing & Subscription Logic
+> **Handled automatically** by LiveKit's `VideoConference` component.
+
 
 **LiveKit:**
 - Connect to LiveKit room with access token
@@ -184,7 +208,9 @@ Frontend ([apps/web](apps/web)):
 - Auto-retry track publication on failure
 - Show user-friendly error messages
 
-### Step 3.4: Build Video Grid Component
+### ⚠️ Step 3.4: Build Video Grid Component
+> **Skipped** — using LiveKit's built-in `VideoConference` grid UI instead of a custom `VideoGrid.tsx`.
+
 - Create [apps/web/components/VideoGrid.tsx](apps/web/components/VideoGrid.tsx)
 - Display local video feed
 - Render remote participant videos in grid layout
@@ -192,14 +218,16 @@ Frontend ([apps/web](apps/web)):
 - Implement responsive grid (2x2, 3x3, etc.)
 - Add "No video" placeholder for disabled cameras
 
-### Step 3.5: Add Media Controls
+### ⚠️ Step 3.5: Add Media Controls
+> **Skipped** — using LiveKit's built-in controls instead of a custom `MediaControls.tsx`.
+
 - Create [apps/web/components/MediaControls.tsx](apps/web/components/MediaControls.tsx)
 - Mute/Unmute button (toggle audio track)
 - Video On/Off button (toggle video track)
 - Leave room button
 - Update UI state and notify peers via Socket.io
 
-### Step 3.6: Update Room Page
+### ✅ Step 3.6: Update Room Page
 - Redesign [apps/web/app/room/[id]/page.tsx](apps/web/app/room/[id]/page.tsx):
   - Initialize Socket.io connection
   - Join WebRTC room
@@ -209,7 +237,7 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## Phase 4: Classroom Management Features
+## ❌ Phase 4: Classroom Management Features [NOT STARTED]
 
 ### Step 4.1: Implement Role-Based Permissions
 - Create permission middleware in backend
@@ -255,7 +283,7 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## Phase 5: Interactive Whiteboard
+## ❌ Phase 5: Interactive Whiteboard [NOT STARTED]
 
 ### Step 5.1: Choose Whiteboard Library
 Options:
@@ -293,7 +321,7 @@ Recommendation: tldraw or Fabric.js for speed
 
 ---
 
-## Phase 6: Additional Features & Polish
+## ❌ Phase 6: Additional Features & Polish [NOT STARTED]
 
 ### Step 6.1: Add Text Chat
 - Create [apps/web/components/ChatPanel.tsx](apps/web/components/ChatPanel.tsx)
@@ -382,7 +410,7 @@ screenTrack.addEventListener('ended', () => {
 
 ---
 
-## Phase 7: UI/UX Enhancements & Testing
+## ❌ Phase 7: UI/UX Enhancements & Testing [NOT STARTED]
 
 ### Step 7.1: Improve Error Handling
 - Handle WebRTC connection failures
@@ -427,7 +455,7 @@ screenTrack.addEventListener('ended', () => {
 
 ---
 
-## Phase 8: Deployment & Production
+## 🔧 Phase 8: Deployment & Production [PARTIAL — Docker configured, not deployed]
 
 ### Step 8.1: Prepare for Production
 - Set up environment variables for production
@@ -517,11 +545,11 @@ Start with this sequence for fastest path to working prototype:
 1. ✅ Set up backend server (Step 1.1-1.4)
 2. ✅ Implement basic authentication (Step 1.5-1.6)
 3. ✅ Create room creation/joining (Step 2.4-2.6)
-4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **CORE FEATURE**
-5. ✅ Add teacher controls (Step 4.2-4.5)
-6. ✅ Implement whiteboard (Step 5.1-5.4)
-7. ✅ Polish and test (Step 7.1-7.4)
-8. ✅ Deploy (Step 8.1-8.3)
+4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **CORE FEATURE — done via LiveKit**
+5. ❌ Add teacher controls (Step 4.2-4.5) ← **NEXT UP**
+6. ❌ Implement whiteboard (Step 5.1-5.4)
+7. ❌ Polish and test (Step 7.1-7.4)
+8. ❌ Deploy (Step 8.1-8.3)
 
 Skip optional features initially: OAuth, chat, screen sharing, advanced analytics.
 
