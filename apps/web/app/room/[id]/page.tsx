@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
+import RoomHeader from "@/components/RoomHeader";
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
 import "@livekit/components-styles/index.css";
@@ -98,7 +99,8 @@ export default function RoomPage({ params }: RoomPageProps) {
   if (!user || !roomData || !livekitToken) return null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-white relative">
+      <RoomHeader roomId={roomId} roomName={roomData.name} />
       <LiveKitRoom
         token={livekitToken}
         serverUrl={livekitUrl}

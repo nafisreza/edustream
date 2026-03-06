@@ -15,8 +15,7 @@ import { User } from '../models/User.model';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 >>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+import { JWT_EXPIRES_IN, JWT_SECRET } from '../config/jwt';
 
 // Register a new user
 export const register = async (req: Request, res: Response): Promise<void> => {
