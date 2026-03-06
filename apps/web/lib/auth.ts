@@ -20,6 +20,7 @@ export const authApi = {
   logout: async () => {
     await apiClient.post('/api/auth/logout');
   },
+<<<<<<< HEAD
 
   forgotPassword: async (email: string): Promise<{ message: string }> => {
     const response = await apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
@@ -35,4 +36,6 @@ export const authApi = {
     const response = await apiClient.post<{ message: string }>('/api/auth/reset-password', { resetToken, newPassword });
     return response.data;
   },
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 };

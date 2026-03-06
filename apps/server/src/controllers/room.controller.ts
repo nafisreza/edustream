@@ -4,7 +4,10 @@ import { createRoomSchema, joinRoomSchema } from '@edustream/types';
 import { Room } from '../models/Room.model';
 import { generateRoomId } from '../utils/roomId.generator';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+<<<<<<< HEAD
 import { generateLiveKitToken } from '../utils/livekit';
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 // Create a new room
 export const createRoom = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -198,6 +201,7 @@ export const closeRoom = async (req: AuthenticatedRequest, res: Response): Promi
     res.status(500).json({ message: 'Server error while closing room' });
   }
 };
+<<<<<<< HEAD
 
 // Get LiveKit access token for a room
 export const getRoomToken = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -241,3 +245,5 @@ export const getRoomToken = async (req: AuthenticatedRequest, res: Response): Pr
     res.status(500).json({ message: 'Server error while generating token' });
   }
 };
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f

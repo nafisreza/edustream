@@ -108,6 +108,7 @@
 .snap-center {
   scroll-snap-align: center;
 }
+<<<<<<< HEAD
 
 /* Hero gradient */
 .hero-gradient {
@@ -139,3 +140,5 @@
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f

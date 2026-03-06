@@ -27,6 +27,7 @@ export const roomApi = {
     const response = await apiClient.delete<{ message: string }>(`/api/rooms/${roomId}`);
     return response.data;
   },
+<<<<<<< HEAD
 
   getRoomToken: async (roomId: string): Promise<{
     token: string;
@@ -38,4 +39,6 @@ export const roomApi = {
     const response = await apiClient.get(`/api/rooms/${roomId}/token`);
     return response.data;
   },
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 };

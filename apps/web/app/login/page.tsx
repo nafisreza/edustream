@@ -8,6 +8,10 @@ import { toast } from "react-hot-toast";
 import { loginSchema } from "@edustream/types";
 import { authApi } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
+<<<<<<< HEAD
+=======
+import Navbar from "@/components/Navbar";
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +37,11 @@ export default function LoginPage() {
       setUser(response.user);
 
       toast.success("Logged in successfully!");
+<<<<<<< HEAD
       router.push("/");
+=======
+      router.push("/create");
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
     } catch (error: any) {
       if (error.name === 'ZodError') {
         const firstError = error.errors[0];
@@ -58,6 +66,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
+<<<<<<< HEAD
+=======
+      <Navbar />
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">

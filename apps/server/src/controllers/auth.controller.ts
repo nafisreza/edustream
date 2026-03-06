@@ -2,12 +2,18 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+<<<<<<< HEAD
 import crypto from 'crypto';
 import { registerSchema, loginSchema } from '@edustream/types';
 import { User } from '../models/User.model';
 import { PasswordReset } from '../models/PasswordReset.model';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { sendOTPEmail } from '../utils/email';
+=======
+import { registerSchema, loginSchema } from '@edustream/types';
+import { User } from '../models/User.model';
+import { AuthenticatedRequest } from '../middleware/auth.middleware';
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -42,7 +48,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
       // Generate JWT token
       const token = jwt.sign(
+<<<<<<< HEAD
         { userId: user._id.toString(), email: user.email, role: user.role, name: user.name },
+=======
+        { userId: user._id.toString(), email: user.email, role: user.role },
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
@@ -97,7 +107,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
       // Generate JWT token
       const token = jwt.sign(
+<<<<<<< HEAD
         { userId: user._id.toString(), email: user.email, role: user.role, name: user.name },
+=======
+        { userId: user._id.toString(), email: user.email, role: user.role },
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
       );
@@ -171,6 +185,7 @@ export const logout = async (_req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Server error during logout' });
   }
 };
+<<<<<<< HEAD
 
 // Request password reset OTP
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
@@ -305,3 +320,5 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Server error during password reset' });
   }
 };
+=======
+>>>>>>> d9f5103b5aaa692773845db213209570c94c058f
