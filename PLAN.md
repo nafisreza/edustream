@@ -2,26 +2,6 @@
 **Complete Development Roadmap**
 
 ## Current Status
-<<<<<<< HEAD
-- ✅ **Phase 1 Complete**: Backend foundation with authentication, room management, and password reset
-  - ✅ Express.js backend with TypeScript
-  - ✅ MongoDB database with Docker
-  - ✅ JWT cookie-based authentication
-  - ✅ Password reset with Gmail OTP
-  - ✅ Room API endpoints (create, join, close, leave)
-  - ✅ Profile page and navigation
-  - ✅ Team setup documentation
-- ❌ WebRTC: Not implemented
-- ❌ Video/Audio streaming: Not started
-- ❌ Whiteboard: Not implemented
-- ❌ Classroom controls: Not started
-
-**Estimated Completion: ~35% (Backend + Auth complete)**
-
----
-
-## ✅ Phase 1: Backend Foundation & Authentication [COMPLETE]
-=======
 - ✅ Frontend UI: Landing, Login, Signup, Create, Join pages (static)
 - ❌ Backend: Not started
 - ❌ WebRTC: Not implemented
@@ -34,7 +14,6 @@
 ---
 
 ## Phase 1: Backend Foundation & Authentication
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 ### Step 1.1: Create Backend Server Structure
 - Create [apps/server](apps/server) directory in the monorepo
@@ -49,10 +28,7 @@ Install in [apps/server/package.json](apps/server/package.json):
 - socket.io (for WebRTC signaling)
 - mongodb, mongoose (database)
 - bcryptjs, jsonwebtoken (authentication)
-<<<<<<< HEAD
-=======
 - express-validator (input validation)
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 ### Step 1.3: Configure Express & Socket.io Server
 - Set up Express app with CORS configuration

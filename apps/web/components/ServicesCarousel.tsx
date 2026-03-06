@@ -26,20 +26,9 @@ export default function ServicesCarousel() {
     },
     {
       name: "Recap",
-<<<<<<< HEAD
-      image: "/recap.jpg",
-      alt: "Recap",
-    },
-    {
-      name: "Chat",
-      image: "/chat.png",
-      alt: "Chat",
-    },
-=======
       image: "/recap.webp",
       alt: "Recap",
     },
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
   ];
 
   const scroll = (direction: "left" | "right") => {
@@ -90,11 +79,7 @@ export default function ServicesCarousel() {
   }, [services.length]);
 
   return (
-<<<<<<< HEAD
-    <div className="relative overflow-visible">
-=======
     <div className="relative">
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       {/* Left Scroll Button */}
       <button
         onClick={() => scroll("left")}
@@ -107,11 +92,7 @@ export default function ServicesCarousel() {
       {/* Scrollable Cards Container */}
       <div
         ref={scrollContainerRef}
-<<<<<<< HEAD
-        className="overflow-x-auto overflow-y-visible scrollbar-hide pb-4 pt-2 snap-x snap-mandatory scroll-smooth px-2"
-=======
         className="overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory scroll-smooth px-2"
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       >
         <div className="flex gap-6 min-w-max">
           {services.map((service) => (
@@ -149,24 +130,6 @@ export default function ServicesCarousel() {
 
       {/* Navigation Dots */}
       <div className="flex justify-center gap-2 mt-6">
-<<<<<<< HEAD
-        {[0, 1, 2].map((dotIndex) => {
-          // Map dot indices to service indices (0, 2, 4 for 5 services)
-          const serviceIndex = dotIndex === 0 ? 0 : dotIndex === 1 ? 2 : 4;
-          return (
-            <button
-              key={dotIndex}
-              onClick={() => scrollToIndex(serviceIndex)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                serviceIndex === activeIndex
-                  ? "bg-white"
-                  : "bg-white/50 border-2 border-white/70 hover:border-white"
-              }`}
-              aria-label={`Go to slide ${serviceIndex + 1}`}
-            />
-          );
-        })}
-=======
         {services.map((_, index) => (
           <button
             key={index}
@@ -179,7 +142,6 @@ export default function ServicesCarousel() {
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       </div>
     </div>
   );

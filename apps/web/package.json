@@ -12,19 +12,10 @@
   },
   "dependencies": {
     "@edustream/types": "file:../../packages/types",
-<<<<<<< HEAD
-    "@livekit/components-react": "^2.9.19",
-    "@livekit/components-styles": "^1.2.0",
-=======
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
     "@repo/ui": "*",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-<<<<<<< HEAD
-    "livekit-client": "^2.17.0",
-=======
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
     "lucide-react": "^0.562.0",
     "next": "16.1.0",
     "react": "^19.2.0",

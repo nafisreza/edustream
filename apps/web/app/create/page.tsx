@@ -6,10 +6,7 @@ import { toast } from "react-hot-toast";
 import { createRoomSchema } from "@edustream/types";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
-<<<<<<< HEAD
-=======
 import Navbar from "@/components/Navbar";
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 export default function CreatePage() {
   const router = useRouter();
@@ -59,10 +56,7 @@ export default function CreatePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-<<<<<<< HEAD
-=======
       <Navbar />
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       <div className="flex flex-1 items-center justify-center px-4">
         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-sm border">
           <div className="text-center">

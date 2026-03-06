@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
-<<<<<<< HEAD
-=======
 import Navbar from "@/components/Navbar";
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 
 export default function JoinPage() {
   const router = useRouter();
@@ -36,15 +33,6 @@ export default function JoinPage() {
     try {
       // Verify room exists
       await roomApi.getRoom(roomId);
-      
-<<<<<<< HEAD
-      // Join the room (adds user to participants)
-      await roomApi.joinRoom(roomId, { name: user?.name || 'Anonymous' });
-      
-      toast.success("Joined room successfully");
-      
-=======
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       // Navigate to room page
       router.push(`/room/${roomId}`);
     } catch (error: any) {
@@ -72,10 +60,7 @@ export default function JoinPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-<<<<<<< HEAD
-=======
       <Navbar />
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       <div className="flex flex-1 items-center justify-center px-4">
         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-sm border">
           <div className="text-center">

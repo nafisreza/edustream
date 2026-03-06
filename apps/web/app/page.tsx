@@ -1,66 +1,7 @@
-<<<<<<< HEAD
-"use client";
-
-=======
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import ServicesCarousel from "@/components/ServicesCarousel";
-<<<<<<< HEAD
-import ServicesDetails from "@/components/ServicesDetails";
-import CustomerJourney from "@/components/CustomerJourney";
-import { useAuth } from "@/contexts/AuthContext";
-
-export default function Home() {
-  const { user, isLoading } = useAuth();
-
-  return (
-    <div className="flex min-h-screen flex-col bg-white">
-      {/* Gradient Container - Navbar + Hero + Services */}
-      <div className="relative hero-gradient min-h-screen">
-        <Navbar/>
-        
-        {/* Hero Section */}
-        <section className="pb-20 sm:pb-20 lg:pb-24">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-20 lg:pt-24">
-            <div className="mx-auto max-w-4xl text-center">
-              <div className="space-y-6">
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
-                  <span className="text-white">Where teaching meets</span>
-                  <br />
-                  <span className="text-white">seamless connection</span>
-                </h1>
-                <p className="mx-auto max-w-3xl text-lg text-white/90 sm:text-xl leading-relaxed">
-                  EduStream brings teachers and students together in real time with smooth video streaming,
-                  classroom controls, and a clean interface built for effective online learning.
-                </p>
-                <div className="flex justify-center">
-                  {isLoading ? null : user ? (
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <Link
-                        href="/create"
-                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                      >
-                        Create Room
-                      </Link>
-                      <Link
-                        href="/join"
-                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                      >
-                        Join Room
-                      </Link>
-                    </div>
-                  ) : (
-                    <Link
-                      href="/signup"
-                      className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-10 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                    >
-                      Let&apos;s get started!
-                    </Link>
-                  )}
-                </div>
-=======
 
 export default function Home() {
   return (
@@ -88,34 +29,11 @@ export default function Home() {
                 >
                   Let&apos;s get started!
                 </Link>
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
               </div>
             </div>
           </div>
         </section>
 
-<<<<<<< HEAD
-        {/* Services Carousel Section */}
-        <section id="features" className="pt-2 sm:pt-4 lg:pt-6 pb-6 sm:pb-8 lg:pb-10 relative overflow-visible">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            {/* <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-white">
-              Services we offer
-            </h2> */}
-          </div>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
-            <ServicesCarousel />
-          </div>
-        </section>
-      </div>
-
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Services Details Section */}
-        <ServicesDetails />
-
-        {/* Customer Journey Section */}
-        <CustomerJourney />
-=======
         {/* Services Section */}
         <section id="features" className="pt-2 sm:pt-4 lg:pt-6 pb-6 sm:pb-8 lg:pb-10 bg-white relative">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -127,7 +45,6 @@ export default function Home() {
             <ServicesCarousel />
           </div>
         </section>
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
       </main>
 
       {/* Footer */}
@@ -138,11 +55,7 @@ export default function Home() {
             <div className="col-span-1 md:col-span-2">
               <Link href="/" className="inline-block mb-4">
                 <Image
-<<<<<<< HEAD
-                  src="/EduStreamLogo_purple.png"
-=======
                   src="/EduStreamLogo.png"
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
                   alt="EduStream Logo"
                   width={140}
                   height={40}
@@ -192,11 +105,7 @@ export default function Home() {
               <ul className="space-y-2">
                 <li>
                   <Link
-<<<<<<< HEAD
-                    href="/help"
-=======
                     href="#support"
->>>>>>> d9f5103b5aaa692773845db213209570c94c058f
                     className="text-sm text-gray-600 hover:text-[#6B46C1] transition-colors"
                   >
                     Help Center
