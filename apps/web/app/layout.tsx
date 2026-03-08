@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import "./globals.css";
+import "@excalidraw/excalidraw/index.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

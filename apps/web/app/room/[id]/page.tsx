@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
@@ -109,6 +110,27 @@ export default function RoomPage({ params }: RoomPageProps) {
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         {/* Video area */}
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          <Link
+            href={`/whiteboard/${roomId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              zIndex: 20,
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: 8,
+              padding: '8px 12px',
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#111827',
+              textDecoration: 'none',
+            }}
+          >
+            Open Whiteboard
+          </Link>
           <LiveKitRoom
             token={livekitToken}
             serverUrl={livekitUrl}

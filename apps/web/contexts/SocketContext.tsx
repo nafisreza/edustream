@@ -7,7 +7,8 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { createSocketClient } from '@/lib/socket';
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -38,13 +39,7 @@ export function SocketProvider({
   useEffect(() => {
     if (!roomId || !userId) return;
 
-    const serverUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-    const s = io(serverUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-    });
+    const s = createSocketClient();
 
     setSocket(s);
 
