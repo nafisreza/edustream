@@ -88,7 +88,7 @@ const emitWhiteboardPresence = (io: SocketIOServer, roomId: string) => {
     ? Array.from(roomParticipants.values())
     : [];
 
-  io.to(roomId).emit('whiteboard-presence-state', {
+  io.to(`whiteboard:${roomId}`).emit('whiteboard-presence-state', {
     roomId,
     participants,
   });
@@ -167,8 +167,13 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     // Join whiteboard room (separate from room participant tracking)
     socket.on('join-whiteboard-room', ({ roomId, color }) => {
       // Derive identity from the authenticated socket; never trust client-supplied userId/name.
-      const userId = socket.data.userId as string;
-      const name = socket.data.name as string;
+      const userId = socket.data.userId as string | undefined;
+      const name = socket.data.name as string | undefined;
+
+      if (!userId || !name) {
+        socket.emit('whiteboard-error', { message: 'Authentication data missing' });
+        return;
+      }
 
       // Validate the user is an active participant of this room.
       const room = activeRooms.get(roomId);
@@ -177,8 +182,8 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         return;
       }
 
-      socket.join(roomId);
-      console.log(`🧩 Whiteboard join: socket ${socket.id} -> ${roomId}`);
+      socket.join(`whiteboard:${roomId}`);
+      console.log(`🧩 Whiteboard join: socket ${socket.id} -> whiteboard:${roomId}`);
 
       if (!whiteboardParticipants.has(roomId)) {
         whiteboardParticipants.set(roomId, new Map());
@@ -203,7 +208,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           whiteboardState.socketToClientId.delete(socket.id);
           removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
           const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
-          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+          socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
         }
       }
 
@@ -215,7 +220,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         }
       }
 
-      socket.leave(roomId);
+      socket.leave(`whiteboard:${roomId}`);
       emitWhiteboardPresence(io, roomId);
     });
 
@@ -330,11 +335,11 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
 
     // Whiteboard events
     socket.on('whiteboard-draw', ({ roomId, drawData }) => {
-      socket.to(roomId).emit('whiteboard-draw', drawData);
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-draw', drawData);
     });
 
     socket.on('whiteboard-clear', ({ roomId }) => {
-      socket.to(roomId).emit('whiteboard-clear');
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-clear');
     });
 
     socket.on('whiteboard-scene-update', ({ roomId, elementsJson }) => {
@@ -349,7 +354,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       }
 
       whiteboardSnapshots.set(roomId, elementsJson);
-      socket.to(roomId).emit('whiteboard-scene-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-scene-update', {
         roomId,
         elementsJson,
       });
@@ -374,7 +379,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
 
       const whiteboardState = getOrCreateWhiteboardState(roomId);
       Y.applyUpdate(whiteboardState.doc, updateBytes, socket.id);
-      socket.to(roomId).emit('whiteboard-yjs-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-yjs-update', {
         roomId,
         update: Array.from(updateBytes),
       });
@@ -397,7 +402,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         }
       }
 
-      socket.to(roomId).emit('whiteboard-awareness-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', {
         roomId,
         update: Array.from(updateBytes),
       });
@@ -424,7 +429,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           whiteboardState.socketToClientId.delete(socket.id);
           removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
           const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
-          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+          socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
         }
       });
 
