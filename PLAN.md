@@ -26,7 +26,7 @@
   - ⚠️  Waiting room approval flow (socket-based host approval) not implemented
 - ✅ **Phase 4 Complete**: Classroom management features (fully custom UI)
   - ✅ `SocketContext.tsx` — Socket.io provider wrapping each room session
-  - ✅ `CustomControlBar.tsx` — full-width bottom bar: room code (left), mic/camera/screen share/raise hand (center), leave + end (right)
+  - ✅ `CustomControlBar.tsx` — full-width bottom bar: room code (left), mic/camera/screen share/whiteboard/raise hand (center), leave + end (right)
   - ✅ `CustomVideoConference.tsx` — custom grid layout, no LiveKit built-in controls or chat
   - ✅ `ClassroomOverlay.tsx` — side-effects only: handles `muted-by-host`, `kicked-from-room`, `meeting-ended`
   - ✅ `RoomSidebar.tsx` — unified right sidebar with Participants and Chat tabs, open by default for all
@@ -40,7 +40,15 @@
   - ✅ Role-based room creation: students blocked at UI (no Create Room link), page-level redirect, and backend 403 guard
   - ✅ Backend socket handlers: `lower-hand`, `mute-user`, `kick-user`, `end-meeting`
   - ⚠️  Active speaker detection skipped — LiveKit natively highlights active speakers
-- ❌ **Phase 5**: Interactive whiteboard — not started
+- ✅ **Phase 5 Complete**: Interactive whiteboard — inline panel embedded inside meeting
+  - ✅ `Whiteboard.tsx` — inline panel toggled from control bar (45% width, no new tab)
+  - ✅ `useWhiteboardCollab.ts` — Yjs CRDT real-time sync via existing SocketContext socket
+  - ✅ Excalidraw canvas with full drawing tools
+  - ✅ Whiteboard state persisted to MongoDB (`Room.whiteboardState` Buffer field, 3s debounce)
+  - ✅ State loaded from DB on first join (late-joiners see full board)
+  - ✅ Whiteboard accuracy fixes: reduced suppress window 350ms → 30ms; `pendingElementsRef` updated on remote changes to prevent stale flush overwrites
+  - ✅ PC connection error fix: `wasConnectedRef` guard prevents redirect on transient first-join ICE failures
+  - ⚠️  Student draw permission toggle not yet implemented (students can currently draw)
 - ❌ **Phase 6**: Connection quality indicator, room settings — not started
   - ✅ Screen sharing button — done (in `CustomControlBar`)
   - ✅ Participant list sidebar — done (`RoomSidebar`)
@@ -48,9 +56,9 @@
 - ❌ **Phase 7**: UI/UX polish, accessibility, responsive design — not started
 - 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~72% (Backend + Auth + LiveKit streaming + Full classroom management UI complete)**
+**Estimated Completion: ~82% (Backend + Auth + LiveKit streaming + Full classroom management UI + Whiteboard complete)**
 
-**Last Updated: March 1, 2026**
+**Last Updated: March 11, 2026**
 
 ---
 
@@ -307,41 +315,33 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## ❌ Phase 5: Interactive Whiteboard [NOT STARTED — NEXT UP]
+## ✅ Phase 5: Interactive Whiteboard [COMPLETE]
 
-### Step 5.1: Choose Whiteboard Library
-Options:
-- **Fabric.js**: Full-featured canvas library
-- **tldraw**: Modern collaborative whiteboard
-- **Excalidraw**: Simple drawing tool
-- **Custom Canvas**: Build from scratch with HTML5 Canvas API
+### ✅ Step 5.1: Choose Whiteboard Library
+- ✅ **Excalidraw** chosen — provides pen, shapes, text, eraser, color tools out of the box
+- Installed: `excalidraw`, `yjs`, `y-protocols`
 
-Recommendation: tldraw or Fabric.js for speed
+### ✅ Step 5.2: Install & Configure Whiteboard
+- ✅ [apps/web/components/Whiteboard.tsx](apps/web/components/Whiteboard.tsx) — inline panel with header (Live/Offline badge, participant count, Clear board for host, Close button)
+- ✅ [apps/web/hooks/useWhiteboardCollab.ts](apps/web/hooks/useWhiteboardCollab.ts) — Yjs CRDT collaboration hook; accepts existing `socket` prop from SocketContext (no separate socket)
+- ✅ Excalidraw dynamically imported (SSR disabled)
 
-### Step 5.2: Install & Configure Whiteboard
-- Install chosen library in [apps/web](apps/web)
-- Create [apps/web/components/Whiteboard.tsx](apps/web/components/Whiteboard.tsx)
-- Initialize canvas with drawing tools (pen, shapes, eraser, colors)
-- Add toolbar with tool selection
+### ✅ Step 5.3: Add Whiteboard Toggle
+- ✅ Whiteboard toggle button in `CustomControlBar.tsx` (purple tint, pen icon)
+- ✅ Split layout: videos on left (flex: 1), whiteboard on right (45% width); both full viewport height
+- ✅ Whiteboard state preserved when panel is hidden/re-opened
 
-### Step 5.3: Add Whiteboard Toggle
-- Create button to show/hide whiteboard
-- Split screen layout: videos on left, whiteboard on right
-- OR fullscreen whiteboard mode with minimized videos
+### ✅ Step 5.4: Implement Real-Time Synchronization
+- ✅ Yjs Y.Doc with Y.Map for elements — conflict-free CRDT merging
+- ✅ Socket events: `join-whiteboard-room`, `whiteboard-yjs-sync` (full state on join), `whiteboard-yjs-update` (incremental Yjs updates), `whiteboard-clear`
+- ✅ Backend holds per-room Yjs doc in memory; loads from MongoDB if cold (late-joiners get full board)
+- ✅ Debounce-persists to `Room.whiteboardState` (MongoDB Buffer) every 3 seconds
+- ✅ Accuracy fixes: 30ms suppress window (was 350ms); `pendingElementsRef` refreshed on remote updates to prevent stale-flush overwrites
 
-### Step 5.4: Implement Real-Time Synchronization
-- Socket events for canvas changes:
-  - `whiteboard-draw`: Drawing strokes
-  - `whiteboard-clear`: Clear canvas
-  - `whiteboard-undo`: Undo last action
-- Broadcast teacher's canvas changes to all students
-- Optionally allow students to draw (permission-based)
-
-### Step 5.5: Add Whiteboard Permissions
-- Teacher: Full drawing access
-- Students: View-only by default
-- Toggle "Allow student drawing" option
-- Color-code student drawings by user
+### ⚠️ Step 5.5: Add Whiteboard Permissions
+- ⚠️ Teacher: Full drawing access ✅
+- ⚠️ Students: currently can also draw — **view-only toggle not yet implemented**
+- TODO: Add "Allow student drawing" toggle for host; backend enforces via socket auth check
 
 ---
 
