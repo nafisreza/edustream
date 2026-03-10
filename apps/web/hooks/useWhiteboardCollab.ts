@@ -37,7 +37,9 @@ const safeParseElements = (raw: string | undefined): any[] => {
 
 // Reconstruct an ordered element array from a Y.Map keyed by element ID.
 // Excalidraw v0.17+ assigns every element a fractional `index` string used
-// for z-ordering; we sort on it so the scene is rendered correctly.
+// for z-ordering (e.g. "a0", "a1", "b0", "Zz"). These are alphanumeric
+// tokens designed specifically for lexicographic (string) comparison, so a
+// standard string sort produces the correct rendering order.
 const sortElementsByIndex = (elements: any[]): any[] =>
   [...elements].sort((a, b) => {
     const ia: string = a?.index ?? '';
@@ -135,7 +137,6 @@ export const useWhiteboardCollab = ({
 
     // Guard against accidental board wipes when Excalidraw initialises empty.
     if (pendingElements.length === 0 && !allowEmptySceneSyncRef.current) {
-      allowEmptySceneSyncRef.current = false;
       return;
     }
 
@@ -151,10 +152,16 @@ export const useWhiteboardCollab = ({
       for (const el of pendingElements) {
         if (el?.id) {
           newIds.add(el.id);
-          // Only write to the Y.Map when the element actually changed to avoid
-          // creating redundant CRDT operations for unchanged elements.
+          // Only write to the Y.Map when the element actually changed.
+          // Use the Excalidraw `version` counter as a cheap fast path; fall
+          // back to a full JSON comparison for elements that lack a version.
           const current = yElements.get(el.id);
-          if (JSON.stringify(current) !== JSON.stringify(el)) {
+          const sameVersion =
+            current !== undefined &&
+            typeof el.version === 'number' &&
+            typeof current.version === 'number' &&
+            el.version === current.version;
+          if (!sameVersion && JSON.stringify(current) !== JSON.stringify(el)) {
             yElements.set(el.id, el);
           }
         }
