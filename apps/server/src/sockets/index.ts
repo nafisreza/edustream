@@ -264,6 +264,16 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         activeRooms.delete(roomId);
       }
 
+      // Clean up whiteboard state to prevent memory leaks
+      const whiteboardState = whiteboardRooms.get(roomId);
+      if (whiteboardState) {
+        whiteboardState.awareness.destroy();
+        whiteboardState.doc.destroy();
+        whiteboardRooms.delete(roomId);
+      }
+      whiteboardSnapshots.delete(roomId);
+      whiteboardParticipants.delete(roomId);
+
       console.log(`🔴 Meeting ${roomId} ended by host`);
     });
 
