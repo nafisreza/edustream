@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
@@ -31,6 +31,9 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
+  // Track whether a LiveKit connection was ever successfully established.
+  // Prevents transient first-join PC errors from immediately redirecting away.
+  const wasConnectedRef = useRef(false);
 
   useEffect(() => {
     params.then(({ id }) => setRoomId(id));
@@ -83,7 +86,13 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const handleDisconnect = () => {
     console.log('Disconnected from room');
-    router.push('/');
+    // Only navigate away if we were previously connected.
+    // On initial connection failures (e.g. ICE/PC errors), LiveKit fires
+    // onDisconnected before the session is established — we should stay on
+    // the page so the user can retry rather than being ejected.
+    if (wasConnectedRef.current) {
+      router.push('/');
+    }
   };
 
   const handleError = (error: Error) => {
@@ -117,6 +126,7 @@ export default function RoomPage({ params }: RoomPageProps) {
             connect={true}
             video={{ resolution: VideoPresets.h720.resolution }}
             audio={true}
+            onConnected={() => { wasConnectedRef.current = true; }}
             onDisconnected={handleDisconnect}
             onError={handleError}
             data-lk-theme="default"
