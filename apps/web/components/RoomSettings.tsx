@@ -11,10 +11,11 @@ interface RoomSettingsProps {
     autoMuteOnJoin: boolean;
     waitingRoomEnabled: boolean;
   };
+  onSaved?: (settings: { maxParticipants: number; autoMuteOnJoin: boolean; waitingRoomEnabled: boolean }) => void;
   onClose: () => void;
 }
 
-export default function RoomSettings({ roomId, initialSettings, onClose }: RoomSettingsProps) {
+export default function RoomSettings({ roomId, initialSettings, onSaved, onClose }: RoomSettingsProps) {
   const [maxParticipants, setMaxParticipants] = useState(initialSettings.maxParticipants);
   const [autoMuteOnJoin, setAutoMuteOnJoin] = useState(initialSettings.autoMuteOnJoin);
   const [waitingRoomEnabled, setWaitingRoomEnabled] = useState(initialSettings.waitingRoomEnabled);
@@ -24,6 +25,7 @@ export default function RoomSettings({ roomId, initialSettings, onClose }: RoomS
     setSaving(true);
     try {
       await roomApi.updateRoomSettings(roomId, { maxParticipants, autoMuteOnJoin, waitingRoomEnabled });
+      onSaved?.({ maxParticipants, autoMuteOnJoin, waitingRoomEnabled });
       toast.success('Settings saved');
       onClose();
     } catch {

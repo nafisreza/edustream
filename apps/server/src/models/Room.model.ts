@@ -4,6 +4,7 @@ export interface IParticipant {
   userId: string;
   name: string;
   role: 'host' | 'participant';
+  status: 'active' | 'pending';
   joinedAt: Date;
 }
 
@@ -38,6 +39,11 @@ const participantSchema = new Schema<IParticipant>({
     type: String,
     enum: ['host', 'participant'],
     default: 'participant',
+  },
+  status: {
+    type: String,
+    enum: ['active', 'pending'],
+    default: 'active',
   },
   joinedAt: {
     type: Date,

@@ -29,11 +29,12 @@ export const roomApi = {
   },
 
   getRoomToken: async (roomId: string): Promise<{
-    token: string;
-    url: string;
-    roomName: string;
-    participantName: string;
-    isHost: boolean;
+    token?: string;
+    url?: string;
+    roomName?: string;
+    participantName?: string;
+    isHost?: boolean;
+    pending?: boolean;
   }> => {
     const response = await apiClient.get(`/api/rooms/${roomId}/token`);
     return response.data;

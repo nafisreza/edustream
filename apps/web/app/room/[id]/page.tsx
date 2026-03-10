@@ -10,6 +10,7 @@ import ClassroomOverlay from "@/components/ClassroomOverlay";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import RoomSidebar from "@/components/RoomSidebar";
 import Whiteboard from "@/components/Whiteboard";
+import WaitingRoomView from "@/components/WaitingRoomView";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
 import "@livekit/components-styles/index.css";
@@ -31,6 +32,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
+  const [waitingRoom, setWaitingRoom] = useState(false);
   // Track whether a LiveKit connection was ever successfully established.
   // Prevents transient first-join PC errors from immediately redirecting away.
   const wasConnectedRef = useRef(false);
@@ -52,21 +54,30 @@ export default function RoomPage({ params }: RoomPageProps) {
   }, [roomId, user, isLoading]);
 
   const loadRoom = async () => {
+    setIsLoadingRoom(true);
     try {
       const response = await roomApi.getRoom(roomId);
       setRoomData(response.room);
 
       // Get LiveKit token
       const tokenResponse = await roomApi.getRoomToken(roomId);
+
+      // Host has waiting room enabled for this participant — show waiting UI.
+      if (tokenResponse.pending) {
+        setWaitingRoom(true);
+        return;
+      }
+
+      setWaitingRoom(false);
       console.log('LiveKit connection details:', {
         url: tokenResponse.url,
         roomName: tokenResponse.roomName,
         participantName: tokenResponse.participantName,
         isHost: tokenResponse.isHost,
       });
-      setLivekitToken(tokenResponse.token);
-      setLivekitUrl(tokenResponse.url);
-      setIsHost(tokenResponse.isHost);
+      setLivekitToken(tokenResponse.token!);
+      setLivekitUrl(tokenResponse.url!);
+      setIsHost(tokenResponse.isHost!);
     } catch (error: any) {
       console.error('Failed to load room:', error);
       if (error.response?.status === 404) {
@@ -107,6 +118,21 @@ export default function RoomPage({ params }: RoomPageProps) {
       </div>
     );
   }
+
+  if (!user || !roomData || !livekitToken) return null;
+
+  // Waiting for host approval — render outside SocketProvider so no join-room is emitted yet.
+  if (waitingRoom && user && roomId) {
+    return (
+      <WaitingRoomView
+        roomId={roomId}
+        onApproved={() => {
+          setWaitingRoom(false);
+          loadRoom();
+        }}
+      />
+    );
+ }
 
   if (!user || !roomData || !livekitToken) return null;
 

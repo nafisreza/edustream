@@ -40,6 +40,7 @@ export default function RoomSidebar({
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<Tab>('participants');
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Array<{ userId: string; name: string }>>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [unreadChat, setUnreadChat] = useState(0);
@@ -95,12 +96,27 @@ export default function RoomSidebar({
       );
     });
 
+    // Waiting room: host receives these events
+    socket.on('join-request', ({ userId: uid, name }: { userId: string; name: string }) => {
+      setPendingRequests((prev) => {
+        if (prev.find((r) => r.userId === uid)) return prev;
+        return [...prev, { userId: uid, name }];
+      });
+      toast(`🚪 ${name} is waiting to join`, { duration: 6000, position: 'top-right' });
+    });
+
+    socket.on('waiting-student-left', ({ userId: uid }: { userId: string }) => {
+      setPendingRequests((prev) => prev.filter((r) => r.userId !== uid));
+    });
+
     return () => {
       socket.off('room-participants');
       socket.off('user-joined');
       socket.off('user-left');
       socket.off('hand-raised');
       socket.off('hand-lowered');
+      socket.off('join-request');
+      socket.off('waiting-student-left');
     };
   }, [socket]);
 
@@ -161,6 +177,20 @@ export default function RoomSidebar({
     );
     setOpenMenuId(null);
     // Also emit so the student's button resets (optional, handled client-side for now)
+  };
+
+  const admitUser = (targetUserId: string, name: string) => {
+    if (!socket) return;
+    socket.emit('approve-join', { roomId, userId: targetUserId });
+    setPendingRequests((prev) => prev.filter((r) => r.userId !== targetUserId));
+    toast.success(`${name} admitted`, { position: 'top-right' });
+  };
+
+  const rejectUser = (targetUserId: string, name: string) => {
+    if (!socket) return;
+    socket.emit('reject-join', { roomId, userId: targetUserId });
+    setPendingRequests((prev) => prev.filter((r) => r.userId !== targetUserId));
+    toast(`${name}'s request declined`, { position: 'top-right', style: { color: '#6b7280' } });
   };
 
   /* ── Chat send ────────────────────────────────────────── */
@@ -265,14 +295,51 @@ export default function RoomSidebar({
             <div className="px-3 pt-3">
               <button
                 onClick={muteAll}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-              >
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                 </svg>
                 Mute All
               </button>
+            </div>
+          )}
+
+          {/* Waiting room queue — host only */}
+          {isHost && pendingRequests.length > 0 && (
+            <div className="px-3 pt-3">
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-1.5">
+                Waiting to join ({pendingRequests.length})
+              </p>
+              <div className="space-y-1.5">
+                {pendingRequests.map((req) => (
+                  <div
+                    key={req.userId}
+                    className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                        {req.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm text-gray-800 truncate">{req.name}</span>
+                    </div>
+                    <div className="flex gap-1 shrink-0 ml-1">
+                      <button
+                        onClick={() => admitUser(req.userId, req.name)}
+                        className="px-2 py-0.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
+                      >
+                        Admit
+                      </button>
+                      <button
+                        onClick={() => rejectUser(req.userId, req.name)}
+                        className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

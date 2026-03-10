@@ -52,6 +52,8 @@ const whiteboardParticipants = new Map<string, Map<string, WhiteboardParticipant
 const whiteboardPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 // Per-room whiteboard draw permission: true = students can draw (default), false = view-only for students
 const whiteboardDrawPermissions = new Map<string, boolean>();
+// Waiting room: roomId -> Map<userId, socketId> for participants pending host approval
+const waitingRoomSockets = new Map<string, Map<string, string>>();
 
 const persistWhiteboardState = (roomId: string): void => {
   const existing = whiteboardPersistTimers.get(roomId);
@@ -265,6 +267,88 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       handleLeaveRoom(socket, roomId, userId);
     });
 
+    // ── Waiting room ────────────────────────────────────────────────
+
+    // Student connects while pending approval; server notifies host.
+    socket.on('waiting-room-request', async ({ roomId }) => {
+      const userId = socket.data.userId as string | undefined;
+      const name = socket.data.name as string | undefined;
+      if (!userId || !roomId) return;
+
+      try {
+        const roomDoc = await Room.findOne({ roomId, isActive: true }, 'participants').lean();
+        if (!roomDoc) { socket.emit('join-rejected'); return; }
+
+        const participant = (roomDoc.participants as any[]).find((p: any) => p.userId === userId);
+        if (!participant || participant.status !== 'pending') {
+          socket.emit('join-rejected');
+          return;
+        }
+
+        if (!waitingRoomSockets.has(roomId)) waitingRoomSockets.set(roomId, new Map());
+        waitingRoomSockets.get(roomId)!.set(userId, socket.id);
+
+        io.to(roomId).emit('join-request', { userId, name: name ?? participant.name });
+        console.log(`[WR] ${name ?? userId} waiting in room ${roomId}`);
+      } catch (err) {
+        console.error('waiting-room-request error:', err);
+        socket.emit('join-rejected');
+      }
+    });
+
+    // Host approves a waiting participant.
+    socket.on('approve-join', async ({ roomId, userId: targetUserId }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      if (!hostUserId) return;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom) return;
+      const hostInfo = activeRoom.participants.get(hostUserId);
+      if (!hostInfo || hostInfo.role !== 'host') return;
+
+      try {
+        await Room.findOneAndUpdate(
+          { roomId, 'participants.userId': targetUserId },
+          { $set: { 'participants.$.status': 'active' } }
+        );
+      } catch (err) {
+        console.error('approve-join DB error:', err);
+        return;
+      }
+
+      const waitingSocketId = waitingRoomSockets.get(roomId)?.get(targetUserId);
+      if (waitingSocketId) {
+        io.to(waitingSocketId).emit('join-approved');
+        waitingRoomSockets.get(roomId)?.delete(targetUserId);
+      }
+      console.log(`[WR] Approved ${targetUserId} into room ${roomId}`);
+    });
+
+    // Host rejects a waiting participant.
+    socket.on('reject-join', async ({ roomId, userId: targetUserId }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      if (!hostUserId) return;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom) return;
+      const hostInfo = activeRoom.participants.get(hostUserId);
+      if (!hostInfo || hostInfo.role !== 'host') return;
+
+      try {
+        await Room.findOneAndUpdate(
+          { roomId },
+          { $pull: { participants: { userId: targetUserId } } } as any
+        );
+      } catch (err) {
+        console.error('reject-join DB error:', err);
+      }
+
+      const waitingSocketId = waitingRoomSockets.get(roomId)?.get(targetUserId);
+      if (waitingSocketId) {
+        io.to(waitingSocketId).emit('join-rejected');
+        waitingRoomSockets.get(roomId)?.delete(targetUserId);
+      }
+      console.log(`[WR] Rejected ${targetUserId} from room ${roomId}`);
+    });
+
     // WebRTC signaling events
     socket.on('offer', ({ roomId, targetUserId, offer }) => {
       const room = activeRooms.get(roomId);
@@ -366,6 +450,12 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       whiteboardSnapshots.delete(roomId);
       whiteboardParticipants.delete(roomId);
       whiteboardDrawPermissions.delete(roomId);
+      // Reject any students still in the waiting room so they aren't stuck.
+      const endWaiting = waitingRoomSockets.get(roomId);
+      if (endWaiting) {
+        endWaiting.forEach((wSocketId) => io.to(wSocketId).emit('join-rejected'));
+        waitingRoomSockets.delete(roomId);
+      }
 
       console.log(`🔴 Meeting ${roomId} ended by host`);
     });
@@ -507,6 +597,18 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           emitWhiteboardPresence(io, roomId);
         }
       });
+
+      // If a waiting student disconnects, remove them and notify the host.
+      waitingRoomSockets.forEach((waitingMap, wRoomId) => {
+        for (const [wUserId, wSocketId] of waitingMap.entries()) {
+          if (wSocketId === socket.id) {
+            waitingMap.delete(wUserId);
+            io.to(wRoomId).emit('waiting-student-left', { userId: wUserId });
+            break;
+          }
+        }
+        if (waitingMap.size === 0) waitingRoomSockets.delete(wRoomId);
+      });
       
       // Find and remove user from all rooms
       activeRooms.forEach((room, roomId) => {
@@ -546,6 +648,7 @@ const handleLeaveRoom = (socket: Socket, roomId: string, userId: string): void =
         whiteboardSnapshots.delete(roomId);
         whiteboardParticipants.delete(roomId);
         whiteboardDrawPermissions.delete(roomId);
+        waitingRoomSockets.delete(roomId);
         console.log(`🗑️  Room ${roomId} removed (empty)`);
       }
     }

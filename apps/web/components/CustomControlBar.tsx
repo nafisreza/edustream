@@ -39,6 +39,8 @@ export default function CustomControlBar({
   const [leaving, setLeaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(ConnectionQuality.Unknown);
+  // Keep local settings state so the modal reflects the latest saved values.
+  const [currentSettings, setCurrentSettings] = useState(initialSettings);
 
   /* ── Notify host when hand raised/lowered ─────────────── */
   useEffect(() => {
@@ -208,10 +210,11 @@ export default function CustomControlBar({
         </button>
       </div>
     </div>
-    {settingsOpen && initialSettings && (
+    {settingsOpen && (currentSettings ?? initialSettings) && (
       <RoomSettings
         roomId={roomId}
-        initialSettings={initialSettings}
+        initialSettings={(currentSettings ?? initialSettings)!}
+        onSaved={(s) => setCurrentSettings(s)}
         onClose={() => setSettingsOpen(false)}
       />
     )}
