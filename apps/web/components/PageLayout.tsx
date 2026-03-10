@@ -11,7 +11,10 @@ export default function PageLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showNavbar = !noNavbarRoutes.includes(pathname) && !pathname.startsWith("/room");
+  const showNavbar =
+    !noNavbarRoutes.includes(pathname) &&
+    !pathname.startsWith("/room") &&
+    !pathname.startsWith("/whiteboard");
 
   return (
     <div className="min-h-screen bg-gray-50">

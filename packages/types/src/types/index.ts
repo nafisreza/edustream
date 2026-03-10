@@ -66,10 +66,32 @@ export interface SocketEvents {
   // Whiteboard events
   'whiteboard-draw': (data: { roomId: string; drawData: any }) => void;
   'whiteboard-clear': (data: { roomId: string }) => void;
+  'join-whiteboard-room': (data: { roomId: string; userId: string; name: string; color?: string }) => void;
+  'leave-whiteboard-room': (data: { roomId: string }) => void;
+  'whiteboard-yjs-sync': (
+    data:
+      | { roomId: string; kind: 'request' }
+      | { roomId: string; kind: 'response'; update: number[] }
+  ) => void;
+  'whiteboard-yjs-update': (data: { roomId: string; update: number[] }) => void;
+  'whiteboard-awareness-update': (data: { roomId: string; update: number[]; userId?: string }) => void;
+  'whiteboard-scene-update': (data: { roomId: string; elementsJson: string }) => void;
+  'whiteboard-scene-state': (data: { roomId: string; elementsJson: string }) => void;
+  'whiteboard-presence-state': (data: {
+    roomId: string;
+    participants: Array<{ userId: string; name: string; color: string }>;
+  }) => void;
 
   // Chat events
   'send-message': (data: { roomId: string; message: string; userId: string; name: string }) => void;
   'receive-message': (data: { message: string; userId: string; name: string; timestamp: Date }) => void;
+}
+
+// Whiteboard collaboration types
+export interface WhiteboardAwarenessUser {
+  userId: string;
+  name: string;
+  color: string;
 }
 
 // API Error response

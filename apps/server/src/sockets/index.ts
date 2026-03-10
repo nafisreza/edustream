@@ -1,4 +1,6 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import * as Y from 'yjs';
+import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate, removeAwarenessStates } from 'y-protocols/awareness';
 import { Room } from '../models/Room.model';
 
 interface RoomState {
@@ -13,8 +15,68 @@ interface ParticipantInfo {
   role: 'host' | 'participant';
 }
 
+interface WhiteboardState {
+  doc: Y.Doc;
+  awareness: Awareness;
+  socketToClientId: Map<string, number>;
+}
+
+interface WhiteboardParticipant {
+  userId: string;
+  name: string;
+  color: string;
+}
+
 // Store active rooms and their participants
 const activeRooms = new Map<string, RoomState>();
+const whiteboardRooms = new Map<string, WhiteboardState>();
+const whiteboardSnapshots = new Map<string, string>();
+const whiteboardParticipants = new Map<string, Map<string, WhiteboardParticipant>>();
+
+const getOrCreateWhiteboardState = (roomId: string): WhiteboardState => {
+  const existing = whiteboardRooms.get(roomId);
+  if (existing) {
+    return existing;
+  }
+
+  const doc = new Y.Doc();
+  const awareness = new Awareness(doc);
+  const state: WhiteboardState = {
+    doc,
+    awareness,
+    socketToClientId: new Map(),
+  };
+  whiteboardRooms.set(roomId, state);
+  return state;
+};
+
+const toUint8Array = (data: unknown): Uint8Array => {
+  if (data instanceof Uint8Array) {
+    return data;
+  }
+
+  if (Buffer.isBuffer(data)) {
+    return new Uint8Array(data);
+  }
+
+  if (Array.isArray(data)) {
+    return Uint8Array.from(data);
+  }
+
+  return new Uint8Array();
+};
+
+const emitWhiteboardPresence = (io: SocketIOServer, roomId: string) => {
+  const roomParticipants = whiteboardParticipants.get(roomId);
+  const participants = roomParticipants
+    ? Array.from(roomParticipants.values())
+    : [];
+
+  io.to(roomId).emit('whiteboard-presence-state', {
+    roomId,
+    participants,
+  });
+};
 
 export const initializeSocketHandlers = (io: SocketIOServer): void => {
   io.on('connection', (socket: Socket) => {
@@ -60,6 +122,50 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       socket.emit('room-participants', participants);
 
       console.log(`${name} joined room ${roomId}. Total participants: ${room.participants.size}`);
+    });
+
+    // Join whiteboard room (separate from room participant tracking)
+    socket.on('join-whiteboard-room', ({ roomId, userId, name, color }) => {
+      socket.join(roomId);
+      console.log(`🧩 Whiteboard join: socket ${socket.id} -> ${roomId}`);
+
+      if (!whiteboardParticipants.has(roomId)) {
+        whiteboardParticipants.set(roomId, new Map());
+      }
+
+      whiteboardParticipants.get(roomId)!.set(socket.id, {
+        userId,
+        name,
+        color: color || '#4f46e5',
+      });
+
+      const snapshot = whiteboardSnapshots.get(roomId) ?? JSON.stringify([]);
+      socket.emit('whiteboard-scene-state', { roomId, elementsJson: snapshot });
+      emitWhiteboardPresence(io, roomId);
+    });
+
+    socket.on('leave-whiteboard-room', ({ roomId }) => {
+      const whiteboardState = whiteboardRooms.get(roomId);
+      if (whiteboardState) {
+        const clientId = whiteboardState.socketToClientId.get(socket.id);
+        if (typeof clientId === 'number') {
+          whiteboardState.socketToClientId.delete(socket.id);
+          removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
+          const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
+          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+        }
+      }
+
+      const participants = whiteboardParticipants.get(roomId);
+      if (participants) {
+        participants.delete(socket.id);
+        if (participants.size === 0) {
+          whiteboardParticipants.delete(roomId);
+        }
+      }
+
+      socket.leave(roomId);
+      emitWhiteboardPresence(io, roomId);
     });
 
     // Leave room
@@ -170,6 +276,66 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       socket.to(roomId).emit('whiteboard-clear');
     });
 
+    socket.on('whiteboard-scene-update', ({ roomId, elementsJson }) => {
+      if (typeof elementsJson !== 'string') {
+        return;
+      }
+
+      whiteboardSnapshots.set(roomId, elementsJson);
+      socket.to(roomId).emit('whiteboard-scene-update', {
+        roomId,
+        elementsJson,
+      });
+    });
+
+    // CRDT whiteboard sync (Yjs)
+    socket.on('whiteboard-yjs-sync', ({ roomId }) => {
+      const whiteboardState = getOrCreateWhiteboardState(roomId);
+      const fullUpdate = Y.encodeStateAsUpdate(whiteboardState.doc);
+
+      socket.emit('whiteboard-yjs-sync', {
+        roomId,
+        update: Array.from(fullUpdate),
+      });
+    });
+
+    socket.on('whiteboard-yjs-update', ({ roomId, update }) => {
+      const updateBytes = toUint8Array(update);
+      if (updateBytes.length === 0) {
+        return;
+      }
+
+      const whiteboardState = getOrCreateWhiteboardState(roomId);
+      Y.applyUpdate(whiteboardState.doc, updateBytes, socket.id);
+      socket.to(roomId).emit('whiteboard-yjs-update', {
+        roomId,
+        update: Array.from(updateBytes),
+      });
+    });
+
+    socket.on('whiteboard-awareness-update', ({ roomId, update, userId }) => {
+      const updateBytes = toUint8Array(update);
+      if (updateBytes.length === 0) {
+        return;
+      }
+
+      const whiteboardState = getOrCreateWhiteboardState(roomId);
+      applyAwarenessUpdate(whiteboardState.awareness, updateBytes, socket.id);
+
+      // Track the sender's client IDs so we can clean awareness on disconnect.
+      const states = Array.from(whiteboardState.awareness.getStates().entries());
+      for (const [clientId, state] of states) {
+        if (state && typeof state === 'object' && (state as any).user?.userId === userId) {
+          whiteboardState.socketToClientId.set(socket.id, clientId);
+        }
+      }
+
+      socket.to(roomId).emit('whiteboard-awareness-update', {
+        roomId,
+        update: Array.from(updateBytes),
+      });
+    });
+
     // Chat events
     socket.on('send-message', ({ roomId, message, userId, name }) => {
       io.to(roomId).emit('receive-message', {
@@ -183,6 +349,26 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id}`);
+
+      // Remove disconnected socket from any whiteboard awareness state.
+      whiteboardRooms.forEach((whiteboardState, roomId) => {
+        const clientId = whiteboardState.socketToClientId.get(socket.id);
+        if (typeof clientId === 'number') {
+          whiteboardState.socketToClientId.delete(socket.id);
+          removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
+          const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
+          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+        }
+      });
+
+      whiteboardParticipants.forEach((participants, roomId) => {
+        if (participants.delete(socket.id)) {
+          if (participants.size === 0) {
+            whiteboardParticipants.delete(roomId);
+          }
+          emitWhiteboardPresence(io, roomId);
+        }
+      });
       
       // Find and remove user from all rooms
       activeRooms.forEach((room, roomId) => {
@@ -213,6 +399,14 @@ const handleLeaveRoom = (socket: Socket, roomId: string, userId: string): void =
       // Clean up empty rooms
       if (room.participants.size === 0) {
         activeRooms.delete(roomId);
+        const whiteboardState = whiteboardRooms.get(roomId);
+        if (whiteboardState) {
+          whiteboardState.awareness.destroy();
+          whiteboardState.doc.destroy();
+          whiteboardRooms.delete(roomId);
+        }
+        whiteboardSnapshots.delete(roomId);
+        whiteboardParticipants.delete(roomId);
         console.log(`🗑️  Room ${roomId} removed (empty)`);
       }
     }
