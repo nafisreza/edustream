@@ -119,9 +119,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     );
   }
 
-  if (!user || !roomData || !livekitToken) return null;
-
-  // Waiting for host approval — render outside SocketProvider so no join-room is emitted yet.
+  // Waiting for host approval — must be checked before the livekitToken guard because
+  // the token is intentionally empty while the student is pending.
   if (waitingRoom && user && roomId) {
     return (
       <WaitingRoomView
@@ -132,7 +131,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         }}
       />
     );
- }
+  }
 
   if (!user || !roomData || !livekitToken) return null;
 
