@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
 import { useAuth } from "@/contexts/AuthContext";
+import type { RoomResponse } from "@edustream/types";
 import { SocketProvider } from "@/contexts/SocketContext";
 import ClassroomOverlay from "@/components/ClassroomOverlay";
 import CustomVideoConference from "@/components/CustomVideoConference";
@@ -25,7 +26,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [roomId, setRoomId] = useState<string>("");
-  const [roomData, setRoomData] = useState<any>(null);
+  const [roomData, setRoomData] = useState<RoomResponse | null>(null);
   const [livekitToken, setLivekitToken] = useState<string>("");
   const [livekitUrl, setLivekitUrl] = useState<string>("");
   const [isHost, setIsHost] = useState(false);
@@ -51,7 +52,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     if (roomId && user) {
       loadRoom();
     }
-  }, [roomId, user, isLoading]);
+  }, [roomId, user, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadRoom = async () => {
     setIsLoadingRoom(true);
@@ -78,11 +79,12 @@ export default function RoomPage({ params }: RoomPageProps) {
       setLivekitToken(tokenResponse.token!);
       setLivekitUrl(tokenResponse.url!);
       setIsHost(tokenResponse.isHost!);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load room:', error);
-      if (error.response?.status === 404) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
         toast.error("Room not found or has been closed");
-      } else if (error.response?.status === 403) {
+      } else if (axiosError.response?.status === 403) {
         toast.error("You must join the room first");
         router.push(`/join?roomId=${roomId}`);
         return;

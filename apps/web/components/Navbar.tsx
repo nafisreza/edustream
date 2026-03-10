@@ -43,7 +43,7 @@ export default function Navbar() {
       await logout();
       toast.success("Logged out successfully!");
       router.push("/");
-    } catch (error) {
+    } catch {
       toast.error("Failed to logout");
     }
   };

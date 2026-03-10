@@ -6,8 +6,17 @@ import * as Y from 'yjs';
 
 const AWARENESS_COLORS = ['#4f46e5', '#db2777', '#059669', '#ea580c', '#0891b2', '#7c3aed'];
 
+// Minimal representation of a single Excalidraw element. We only hard-type
+// the properties we reference; the rest pass through via the index signature.
+type ExcalidrawElementData = {
+  id?: string;
+  version?: number;
+  index?: string;
+  [key: string]: unknown;
+};
+
 type ExcalidrawApiLike = {
-  updateScene: (sceneData: { elements?: any[] }) => void;
+  updateScene: (sceneData: { elements?: ExcalidrawElementData[] }) => void;
 };
 
 type WhiteboardUser = {
@@ -21,7 +30,7 @@ type PresenceUser = {
   color: string;
 };
 
-const safeParseElements = (raw: string | undefined): any[] => {
+const safeParseElements = (raw: string | undefined): ExcalidrawElementData[] => {
   if (!raw) {
     return [];
   }
@@ -39,7 +48,7 @@ const safeParseElements = (raw: string | undefined): any[] => {
 // for z-ordering (e.g. "a0", "a1", "b0", "Zz"). These are alphanumeric
 // tokens designed specifically for lexicographic (string) comparison, so a
 // standard string sort produces the correct rendering order.
-const sortElementsByIndex = (elements: any[]): any[] =>
+const sortElementsByIndex = (elements: ExcalidrawElementData[]): ExcalidrawElementData[] =>
   [...elements].sort((a, b) => {
     const ia: string = a?.index ?? '';
     const ib: string = b?.index ?? '';
@@ -65,7 +74,7 @@ export const useWhiteboardCollab = ({
   const socketRef = useRef<Socket | null>(null);
   const apiRef = useRef<ExcalidrawApiLike | null>(null);
   const isApplyingRemoteRef = useRef(false);
-  const pendingElementsRef = useRef<readonly any[] | null>(null);
+  const pendingElementsRef = useRef<readonly ExcalidrawElementData[] | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSyncedSceneRef = useRef<string>('');
   const isHydratedRef = useRef(false);
@@ -91,7 +100,7 @@ export const useWhiteboardCollab = ({
     const ydoc = ydocRef.current;
     if (ydoc) {
       ydoc.transact(() => {
-        const yElements = ydoc.getMap<any>('elements');
+        const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
         yElements.clear();
         for (const el of elements) {
           if (el?.id) {
@@ -122,7 +131,7 @@ export const useWhiteboardCollab = ({
       return;
     }
 
-    const elements = sortElementsByIndex(Array.from(ydoc.getMap<any>('elements').values()));
+    const elements = sortElementsByIndex(Array.from(ydoc.getMap<ExcalidrawElementData>('elements').values()));
     lastSyncedSceneRef.current = JSON.stringify(elements);
     suppressOutgoingUntilRef.current = Date.now() + 30;
     // Sync pendingElementsRef so any in-flight flush timer uses merged state.
@@ -152,7 +161,7 @@ export const useWhiteboardCollab = ({
     const stateVectorBefore = Y.encodeStateVector(ydoc);
 
     ydoc.transact(() => {
-      const yElements = ydoc.getMap<any>('elements');
+      const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
       const existingIds = new Set(yElements.keys());
       const newIds = new Set<string>();
 
@@ -249,7 +258,7 @@ export const useWhiteboardCollab = ({
         return;
       }
       Y.applyUpdate(ydoc, new Uint8Array(update));
-      const yElements = ydoc.getMap<any>('elements');
+      const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
       if (yElements.size > 0) {
         applyYjsElementsToScene();
         isHydratedRef.current = true;
@@ -304,7 +313,7 @@ export const useWhiteboardCollab = ({
     };
   }, [applySceneFromJson, applyYjsElementsToScene, localColor, roomId, socket]);
 
-  const handleSceneChange = useCallback((elements: readonly any[]) => {
+  const handleSceneChange = useCallback((elements: readonly ExcalidrawElementData[]) => {
     if (isApplyingRemoteRef.current) {
       return;
     }
@@ -338,7 +347,7 @@ export const useWhiteboardCollab = ({
     if (ydoc) {
       const stateVectorBefore = Y.encodeStateVector(ydoc);
       ydoc.transact(() => {
-        ydoc.getMap<any>('elements').clear();
+        ydoc.getMap<ExcalidrawElementData>('elements').clear();
       });
       const update = Y.encodeStateAsUpdate(ydoc, stateVectorBefore);
       if (update.length > 0) {
