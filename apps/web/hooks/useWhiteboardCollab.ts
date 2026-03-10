@@ -212,8 +212,6 @@ export const useWhiteboardCollab = ({
       isHydratedRef.current = false;
       socket.emit('join-whiteboard-room', {
         roomId,
-        userId: user.userId,
-        name: user.name,
         color: localColor,
       });
       // Request the full Yjs CRDT state so the local Y.Doc starts from the
