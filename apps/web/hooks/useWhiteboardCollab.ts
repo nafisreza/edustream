@@ -101,8 +101,11 @@ export const useWhiteboardCollab = ({
     }
 
     lastSyncedSceneRef.current = elementsJson ?? '';
-    // Suppress local onChange echo right after remote state application.
-    suppressOutgoingUntilRef.current = Date.now() + 350;
+    // Brief suppress window to catch any immediate Excalidraw echo after
+    // updateScene — 30 ms is enough; 350 ms was silently dropping user strokes.
+    suppressOutgoingUntilRef.current = Date.now() + 30;
+    // Sync pendingElementsRef so any in-flight flush timer uses merged state.
+    pendingElementsRef.current = elements;
     isApplyingRemoteRef.current = true;
     api.updateScene({ elements });
     queueMicrotask(() => {
@@ -120,7 +123,9 @@ export const useWhiteboardCollab = ({
 
     const elements = sortElementsByIndex(Array.from(ydoc.getMap<any>('elements').values()));
     lastSyncedSceneRef.current = JSON.stringify(elements);
-    suppressOutgoingUntilRef.current = Date.now() + 350;
+    suppressOutgoingUntilRef.current = Date.now() + 30;
+    // Sync pendingElementsRef so any in-flight flush timer uses merged state.
+    pendingElementsRef.current = elements;
     isApplyingRemoteRef.current = true;
     api.updateScene({ elements });
     queueMicrotask(() => {
