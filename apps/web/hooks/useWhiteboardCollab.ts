@@ -112,8 +112,6 @@ export const useWhiteboardCollab = ({
       isHydratedRef.current = false;
       socket.emit('join-whiteboard-room', {
         roomId,
-        userId: user.userId,
-        name: user.name,
         color: localColor,
       });
     });

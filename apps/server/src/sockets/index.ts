@@ -1,7 +1,9 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import * as Y from 'yjs';
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate, removeAwarenessStates } from 'y-protocols/awareness';
 import { Room } from '../models/Room.model';
+import { JWT_SECRET } from '../config/jwt';
 
 interface RoomState {
   roomId: string;
@@ -26,6 +28,20 @@ interface WhiteboardParticipant {
   name: string;
   color: string;
 }
+
+/** Parse a single cookie value from a raw Cookie header string. */
+const parseCookieValue = (cookieHeader: string, name: string): string | undefined => {
+  for (const part of cookieHeader.split(';')) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx).trim();
+    const val = part.slice(eqIdx + 1).trim();
+    if (key === name) {
+      return decodeURIComponent(val);
+    }
+  }
+  return undefined;
+};
 
 // Store active rooms and their participants
 const activeRooms = new Map<string, RoomState>();
@@ -79,6 +95,30 @@ const emitWhiteboardPresence = (io: SocketIOServer, roomId: string) => {
 };
 
 export const initializeSocketHandlers = (io: SocketIOServer): void => {
+  // Authenticate every socket connection via the JWT stored in the authToken cookie.
+  io.use((socket, next) => {
+    const cookieHeader = socket.handshake.headers.cookie ?? '';
+    const token = parseCookieValue(cookieHeader, 'authToken');
+
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        userId: string;
+        email: string;
+        role: string;
+        name?: string;
+      };
+      socket.data.userId = decoded.userId;
+      socket.data.name = decoded.name ?? decoded.email;
+      next();
+    } catch {
+      next(new Error('Authentication failed'));
+    }
+  });
+
   io.on('connection', (socket: Socket) => {
     console.log(`✅ Client connected: ${socket.id}`);
 
@@ -125,7 +165,18 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     });
 
     // Join whiteboard room (separate from room participant tracking)
-    socket.on('join-whiteboard-room', ({ roomId, userId, name, color }) => {
+    socket.on('join-whiteboard-room', ({ roomId, color }) => {
+      // Derive identity from the authenticated socket; never trust client-supplied userId/name.
+      const userId = socket.data.userId as string;
+      const name = socket.data.name as string;
+
+      // Validate the user is an active participant of this room.
+      const room = activeRooms.get(roomId);
+      if (!room || !room.participants.has(userId)) {
+        socket.emit('whiteboard-error', { message: 'Not authorized to join this whiteboard room' });
+        return;
+      }
+
       socket.join(roomId);
       console.log(`🧩 Whiteboard join: socket ${socket.id} -> ${roomId}`);
 
