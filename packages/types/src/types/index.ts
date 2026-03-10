@@ -68,7 +68,11 @@ export interface SocketEvents {
   'whiteboard-clear': (data: { roomId: string }) => void;
   'join-whiteboard-room': (data: { roomId: string; userId: string; name: string; color?: string }) => void;
   'leave-whiteboard-room': (data: { roomId: string }) => void;
-  'whiteboard-yjs-sync': (data: { roomId: string; update?: number[] }) => void;
+  'whiteboard-yjs-sync': (
+    data:
+      | { roomId: string; kind: 'request' }
+      | { roomId: string; kind: 'response'; update: number[] }
+  ) => void;
   'whiteboard-yjs-update': (data: { roomId: string; update: number[] }) => void;
   'whiteboard-awareness-update': (data: { roomId: string; update: number[]; userId?: string }) => void;
   'whiteboard-scene-update': (data: { roomId: string; elementsJson: string }) => void;
