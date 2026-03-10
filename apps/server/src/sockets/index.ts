@@ -152,7 +152,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           whiteboardState.socketToClientId.delete(socket.id);
           removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
           const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
-          socket.to(roomId).emit('whiteboard-awareness-update', { update: Array.from(removeUpdate) });
+          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
         }
       }
 
