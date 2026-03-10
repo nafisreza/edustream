@@ -27,7 +27,7 @@ export default function Whiteboard({
 }: WhiteboardProps) {
   const { socket } = useSocket();
 
-  const { isConnected, presenceUsers, handleSceneChange, setExcalidrawApi, clearBoard } =
+  const { isConnected, presenceUsers, handleSceneChange, setExcalidrawApi, clearBoard, studentDrawingAllowed } =
     useWhiteboardCollab({
       roomId,
       user: { userId, name: userName },
@@ -57,14 +57,35 @@ export default function Whiteboard({
         </div>
         <div className="flex items-center gap-1">
           {isHost && (
-            <button
-              type="button"
-              onClick={clearBoard}
-              title="Clear board"
-              className="px-2 py-1 text-xs rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-            >
-              Clear
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  socket?.emit('whiteboard-set-draw-permission', { roomId, allowed: !studentDrawingAllowed })
+                }
+                title={studentDrawingAllowed ? 'Lock drawing for students' : 'Allow students to draw'}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  studentDrawingAllowed
+                    ? 'text-gray-500 hover:text-orange-600 hover:bg-orange-50'
+                    : 'text-orange-600 bg-orange-50 hover:text-orange-700 hover:bg-orange-100'
+                }`}
+              >
+                {studentDrawingAllowed ? 'Lock draw' : 'Unlock'}
+              </button>
+              <button
+                type="button"
+                onClick={clearBoard}
+                title="Clear board"
+                className="px-2 py-1 text-xs rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Clear
+              </button>
+            </>
+          )}
+          {!isHost && !studentDrawingAllowed && (
+            <span className="px-2 py-0.5 rounded text-[10px] bg-orange-100 text-orange-600 font-medium">
+              View only
+            </span>
           )}
           <button
             type="button"
@@ -86,6 +107,7 @@ export default function Whiteboard({
           excalidrawAPI={setExcalidrawApi as any}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onChange={(elements) => handleSceneChange(elements as readonly any[])}
+          viewModeEnabled={!isHost && !studentDrawingAllowed}
         />
       </div>
     </div>

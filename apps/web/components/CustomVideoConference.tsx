@@ -16,6 +16,11 @@ interface CustomVideoConferenceProps {
   isHost: boolean;
   whiteboardOpen: boolean;
   onToggleWhiteboard: () => void;
+  initialSettings?: {
+    maxParticipants: number;
+    autoMuteOnJoin: boolean;
+    waitingRoomEnabled: boolean;
+  };
 }
 
 export default function CustomVideoConference({
@@ -25,6 +30,7 @@ export default function CustomVideoConference({
   isHost,
   whiteboardOpen,
   onToggleWhiteboard,
+  initialSettings,
 }: CustomVideoConferenceProps) {
   const tracks = useTracks(
     [
@@ -51,6 +57,7 @@ export default function CustomVideoConference({
           isHost={isHost}
           whiteboardOpen={whiteboardOpen}
           onToggleWhiteboard={onToggleWhiteboard}
+          initialSettings={initialSettings}
         />
       </div>
     </LayoutContextProvider>

@@ -50,6 +50,8 @@ const whiteboardSnapshots = new Map<string, string>();
 const whiteboardParticipants = new Map<string, Map<string, WhiteboardParticipant>>();
 // Debounce timers for persisting Yjs state to DB (one timer per roomId)
 const whiteboardPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+// Per-room whiteboard draw permission: true = students can draw (default), false = view-only for students
+const whiteboardDrawPermissions = new Map<string, boolean>();
 
 const persistWhiteboardState = (roomId: string): void => {
   const existing = whiteboardPersistTimers.get(roomId);
@@ -145,7 +147,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     console.log(`✅ Client connected: ${socket.id}`);
 
     // Join room
-    socket.on('join-room', ({ roomId, userId, name, role }) => {
+    socket.on('join-room', async ({ roomId, userId, name, role }) => {
       console.log(`📥 Join room request: ${name} → ${roomId}`);
 
       // Join socket.io room
@@ -184,6 +186,16 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       socket.emit('room-participants', participants);
 
       console.log(`${name} joined room ${roomId}. Total participants: ${room.participants.size}`);
+
+      // Auto-mute new participants if the room's autoMuteOnJoin setting is enabled.
+      if (role === 'participant') {
+        try {
+          const roomDoc = await Room.findOne({ roomId }, 'settings').lean();
+          if (roomDoc?.settings?.autoMuteOnJoin) {
+            socket.emit('muted-by-host');
+          }
+        } catch { /* ignore — don't block the join on a DB error */ }
+      }
     });
 
     // Join whiteboard room (separate from room participant tracking)
@@ -219,6 +231,8 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
 
       const snapshot = whiteboardSnapshots.get(roomId) ?? JSON.stringify([]);
       socket.emit('whiteboard-scene-state', { roomId, elementsJson: snapshot });
+      // Inform the new joiner of the current draw permission for this room.
+      socket.emit('whiteboard-draw-permission', { allowed: whiteboardDrawPermissions.get(roomId) ?? true });
       emitWhiteboardPresence(io, roomId);
     });
 
@@ -351,6 +365,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       }
       whiteboardSnapshots.delete(roomId);
       whiteboardParticipants.delete(roomId);
+      whiteboardDrawPermissions.delete(roomId);
 
       console.log(`🔴 Meeting ${roomId} ended by host`);
     });
@@ -362,6 +377,18 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
 
     socket.on('whiteboard-clear', ({ roomId }) => {
       socket.to(`whiteboard:${roomId}`).emit('whiteboard-clear');
+    });
+
+    // Host can toggle whether students are allowed to draw on the whiteboard.
+    socket.on('whiteboard-set-draw-permission', ({ roomId, allowed }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom || !hostUserId) return;
+      const participant = activeRoom.participants.get(hostUserId);
+      if (!participant || participant.role !== 'host') return;
+      whiteboardDrawPermissions.set(roomId, Boolean(allowed));
+      io.to(`whiteboard:${roomId}`).emit('whiteboard-draw-permission', { allowed: Boolean(allowed) });
+      console.log(`🖊️  Whiteboard draw ${allowed ? 'unlocked' : 'locked'} for room ${roomId}`);
     });
 
     socket.on('whiteboard-scene-update', ({ roomId, elementsJson }) => {
@@ -518,6 +545,7 @@ const handleLeaveRoom = (socket: Socket, roomId: string, userId: string): void =
         }
         whiteboardSnapshots.delete(roomId);
         whiteboardParticipants.delete(roomId);
+        whiteboardDrawPermissions.delete(roomId);
         console.log(`🗑️  Room ${roomId} removed (empty)`);
       }
     }

@@ -139,6 +139,7 @@ export default function RoomPage({ params }: RoomPageProps) {
               isHost={isHost}
               whiteboardOpen={whiteboardOpen}
               onToggleWhiteboard={() => setWhiteboardOpen(v => !v)}
+              initialSettings={roomData?.settings}
             />
             <RoomAudioRenderer />
             <ClassroomOverlay />

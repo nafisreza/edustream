@@ -61,6 +61,7 @@ export const useWhiteboardCollab = ({
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([
     { userId: user.userId, name: user.name, color: AWARENESS_COLORS[0] ?? '#4f46e5' },
   ]);
+  const [studentDrawingAllowed, setStudentDrawingAllowed] = useState(true);
   const socketRef = useRef<Socket | null>(null);
   const apiRef = useRef<ExcalidrawApiLike | null>(null);
   const isApplyingRemoteRef = useRef(false);
@@ -282,6 +283,10 @@ export const useWhiteboardCollab = ({
       }
     );
 
+    socket.on('whiteboard-draw-permission', ({ allowed }: { allowed: boolean }) => {
+      setStudentDrawingAllowed(allowed);
+    });
+
     return () => {
       socket.off('connect', joinWhiteboard);
       socket.off('disconnect');
@@ -290,6 +295,7 @@ export const useWhiteboardCollab = ({
       socket.off('whiteboard-yjs-update');
       socket.off('whiteboard-scene-update');
       socket.off('whiteboard-presence-state');
+      socket.off('whiteboard-draw-permission');
       if (socket.connected) {
         socket.emit('leave-whiteboard-room', { roomId });
       }
@@ -370,5 +376,6 @@ export const useWhiteboardCollab = ({
     handleSceneChange,
     setExcalidrawApi,
     clearBoard,
+    studentDrawingAllowed,
   };
 };
