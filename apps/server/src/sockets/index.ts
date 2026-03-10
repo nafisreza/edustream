@@ -281,6 +281,12 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         return;
       }
 
+      const roomParticipants = whiteboardParticipants.get(roomId);
+      if (!roomParticipants?.has(socket.id)) {
+        console.warn(`⚠️ Unauthorized whiteboard-scene-update from socket ${socket.id} for room ${roomId}`);
+        return;
+      }
+
       whiteboardSnapshots.set(roomId, elementsJson);
       socket.to(roomId).emit('whiteboard-scene-update', {
         roomId,
