@@ -201,7 +201,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     });
 
     // Join whiteboard room (separate from room participant tracking)
-    socket.on('join-whiteboard-room', ({ roomId, color }) => {
+    socket.on('join-whiteboard-room', async ({ roomId, color }) => {
       // Derive identity from the authenticated socket; never trust client-supplied userId/name.
       const userId = socket.data.userId as string | undefined;
       const name = socket.data.name as string | undefined;
@@ -231,8 +231,24 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         color: color || '#4f46e5',
       });
 
-      const snapshot = whiteboardSnapshots.get(roomId) ?? JSON.stringify([]);
-      socket.emit('whiteboard-scene-state', { roomId, elementsJson: snapshot });
+      // Send the full Yjs state to the new joiner so they see all existing
+      // drawings immediately, hydrating from DB if needed.
+      const wbState = getOrCreateWhiteboardState(roomId);
+      const isDocEmpty = wbState.doc.getMap('elements').size === 0;
+      if (isDocEmpty) {
+        try {
+          const room = await Room.findOne({ roomId }, 'whiteboardState').lean();
+          if (room?.whiteboardState && room.whiteboardState.length > 0) {
+            Y.applyUpdate(wbState.doc, new Uint8Array(room.whiteboardState));
+            console.log(`📚 Loaded whiteboard state from DB on join for room ${roomId}`);
+          }
+        } catch (err) {
+          console.error(`Failed to load whiteboard state for room ${roomId}:`, err);
+        }
+      }
+      const fullUpdate = Y.encodeStateAsUpdate(wbState.doc);
+      socket.emit('whiteboard-yjs-sync', { roomId, update: Array.from(fullUpdate) });
+
       // Inform the new joiner of the current draw permission for this room.
       socket.emit('whiteboard-draw-permission', { allowed: whiteboardDrawPermissions.get(roomId) ?? true });
       emitWhiteboardPresence(io, roomId);
@@ -499,18 +515,16 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       });
     });
 
-    // CRDT whiteboard sync (Yjs)
+    // CRDT whiteboard sync (Yjs) — re-send full state on demand (e.g. reconnect).
     socket.on('whiteboard-yjs-sync', async ({ roomId }) => {
       const state = getOrCreateWhiteboardState(roomId);
 
       // If the in-memory doc is empty, try to hydrate from DB.
-      const isEmpty = state.doc.getMap('elements').size === 0;
-      if (isEmpty) {
+      if (state.doc.getMap('elements').size === 0) {
         try {
           const room = await Room.findOne({ roomId }, 'whiteboardState').lean();
           if (room?.whiteboardState && room.whiteboardState.length > 0) {
             Y.applyUpdate(state.doc, new Uint8Array(room.whiteboardState));
-            console.log(`📚 Loaded whiteboard state from DB for room ${roomId}`);
           }
         } catch (err) {
           console.error(`Failed to load whiteboard state for room ${roomId}:`, err);

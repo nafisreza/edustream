@@ -168,16 +168,13 @@ export const useWhiteboardCollab = ({
       for (const el of pendingElements) {
         if (el?.id) {
           newIds.add(el.id);
-          // Only write to the Y.Map when the element actually changed.
-          // Use the Excalidraw `version` counter as a cheap fast path; fall
-          // back to a full JSON comparison for elements that lack a version.
+          // Always write — do NOT skip based on version equality.
+          // In-progress elements (active strokes, mid-move text, etc.) update
+          // their geometry on every pointer event but only bump `version` when
+          // the action is committed; skipping same-version writes means peers
+          // never see the element until the user lifts the mouse.
           const current = yElements.get(el.id);
-          const sameVersion =
-            current !== undefined &&
-            typeof el.version === 'number' &&
-            typeof current.version === 'number' &&
-            el.version === current.version;
-          if (!sameVersion && JSON.stringify(current) !== JSON.stringify(el)) {
+          if (JSON.stringify(current) !== JSON.stringify(el)) {
             yElements.set(el.id, el);
           }
         }
@@ -191,8 +188,6 @@ export const useWhiteboardCollab = ({
       }
     });
 
-    // `encodeStateAsUpdate(doc, sv)` returns only the operations that are in
-    // `doc` but not reflected in `sv` — i.e., the incremental delta.
     const update = Y.encodeStateAsUpdate(ydoc, stateVectorBefore);
     if (update.length > 0) {
       socket.emit('whiteboard-yjs-update', {
@@ -229,7 +224,8 @@ export const useWhiteboardCollab = ({
         roomId,
         color: localColor,
       });
-      socket.emit('whiteboard-yjs-sync', { roomId });
+      // The server responds to join-whiteboard-room with whiteboard-yjs-sync
+      // containing the full room state — no separate sync request needed.
     };
 
     // If the socket is already connected when the whiteboard mounts, join immediately.
@@ -243,26 +239,27 @@ export const useWhiteboardCollab = ({
       setIsConnected(false);
     });
 
-    // Full JSON snapshot sent automatically on join (backward compat / initial
-    // state for rooms that were populated before Yjs was introduced).
+    // Full JSON snapshot sent on join (backward compat fallback).
+    // Only apply it if Yjs hasn't already hydrated the scene.
     socket.on('whiteboard-scene-state', ({ elementsJson }: { elementsJson: string }) => {
-      applySceneFromJson(elementsJson);
-      isHydratedRef.current = true;
+      if (!isHydratedRef.current) {
+        applySceneFromJson(elementsJson);
+        isHydratedRef.current = true;
+      }
     });
 
-    // Full Yjs state response — seeds the local Y.Doc and updates Excalidraw
-    // if the server doc already contains elements (overrides the JSON snapshot).
+    // Full Yjs state response — seeds the local Y.Doc and updates Excalidraw.
+    // Always mark hydrated so we don't double-apply the JSON fallback.
     socket.on('whiteboard-yjs-sync', ({ update }: { update: number[] }) => {
       const ydoc = ydocRef.current;
       if (!ydoc || !update?.length) {
+        // Even an empty sync means the server has processed our request.
+        isHydratedRef.current = true;
         return;
       }
       Y.applyUpdate(ydoc, new Uint8Array(update));
-      const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
-      if (yElements.size > 0) {
-        applyYjsElementsToScene();
-        isHydratedRef.current = true;
-      }
+      applyYjsElementsToScene();
+      isHydratedRef.current = true;
     });
 
     // Incremental CRDT delta broadcast from a peer.
@@ -325,17 +322,17 @@ export const useWhiteboardCollab = ({
     }
 
     pendingElementsRef.current = elements ?? [];
-    if (syncTimerRef.current) {
-      return;
-    }
 
-    // Throttle CRDT delta writes — 150 ms gives a good balance between
-    // collaboration responsiveness and reduced bandwidth vs the old 80 ms
-    // full-scene JSON approach.
+    // Cancel any pending flush and restart the timer so every change
+    // (including mid-stroke pointer moves) schedules a fresh flush.
+    // 50 ms keeps collaboration snappy without flooding the socket.
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+    }
     syncTimerRef.current = setTimeout(() => {
       syncTimerRef.current = null;
       flushPendingSceneToServer();
-    }, 150);
+    }, 50);
   }, [flushPendingSceneToServer]);
 
   const setExcalidrawApi = useCallback((api: ExcalidrawApiLike | null) => {

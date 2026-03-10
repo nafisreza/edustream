@@ -10,7 +10,6 @@ import { SocketProvider } from "@/contexts/SocketContext";
 import ClassroomOverlay from "@/components/ClassroomOverlay";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import RoomSidebar from "@/components/RoomSidebar";
-import Whiteboard from "@/components/Whiteboard";
 import WaitingRoomView from "@/components/WaitingRoomView";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
@@ -30,7 +29,6 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [livekitToken, setLivekitToken] = useState<string>("");
   const [livekitUrl, setLivekitUrl] = useState<string>("");
   const [isHost, setIsHost] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
   const [waitingRoom, setWaitingRoom] = useState(false);
@@ -144,56 +142,38 @@ export default function RoomPage({ params }: RoomPageProps) {
       name={user.name}
       role={isHost ? 'host' : 'participant'}
     >
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        {/* Video area */}
-        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-          <LiveKitRoom
-            token={livekitToken}
-            serverUrl={livekitUrl}
-            connect={true}
-            video={{ resolution: VideoPresets.h720.resolution }}
-            audio={true}
-            onConnected={() => { wasConnectedRef.current = true; }}
-            onDisconnected={handleDisconnect}
-            onError={handleError}
-            data-lk-theme="default"
-            style={{ height: '100vh' }}
-          >
-            <CustomVideoConference
-              roomId={roomId}
-              userId={user.id}
-              userName={user.name}
-              isHost={isHost}
-              whiteboardOpen={whiteboardOpen}
-              onToggleWhiteboard={() => setWhiteboardOpen(v => !v)}
-              initialSettings={roomData?.settings}
-            />
-            <RoomAudioRenderer />
-            <ClassroomOverlay />
-          </LiveKitRoom>
-        </div>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#000' }}>
+        <LiveKitRoom
+          token={livekitToken}
+          serverUrl={livekitUrl}
+          connect={true}
+          video={{ resolution: VideoPresets.h720.resolution }}
+          audio={true}
+          onConnected={() => { wasConnectedRef.current = true; }}
+          onDisconnected={handleDisconnect}
+          onError={handleError}
+          data-lk-theme="default"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+        >
+          <CustomVideoConference
+            roomId={roomId}
+            userId={user.id}
+            userName={user.name}
+            isHost={isHost}
+            whiteboardOpen={whiteboardOpen}
+            onToggleWhiteboard={() => setWhiteboardOpen(v => !v)}
+            initialSettings={roomData?.settings}
+          />
+          <RoomAudioRenderer />
+          <ClassroomOverlay />
+        </LiveKitRoom>
 
-        {/* Whiteboard panel — inline, toggled by control bar */}
-        {whiteboardOpen && (
-          <div style={{ width: '45%', minWidth: 0, height: '100vh' }}>
-            <Whiteboard
-              roomId={roomId}
-              userId={user.id}
-              userName={user.name}
-              isHost={isHost}
-              onClose={() => setWhiteboardOpen(false)}
-            />
-          </div>
-        )}
-
-        {/* Sidebar — participants + chat, visible to everyone */}
+        {/* Sidebar — always visible, dark themed */}
         <RoomSidebar
           roomId={roomId}
           userId={user.id}
           userName={user.name}
           isHost={isHost}
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen((v) => !v)}
         />
       </div>
     </SocketProvider>
