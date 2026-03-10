@@ -14,6 +14,8 @@ interface CustomVideoConferenceProps {
   userId: string;
   userName: string;
   isHost: boolean;
+  whiteboardOpen: boolean;
+  onToggleWhiteboard: () => void;
 }
 
 export default function CustomVideoConference({
@@ -21,6 +23,8 @@ export default function CustomVideoConference({
   userId,
   userName,
   isHost,
+  whiteboardOpen,
+  onToggleWhiteboard,
 }: CustomVideoConferenceProps) {
   const tracks = useTracks(
     [
@@ -45,6 +49,8 @@ export default function CustomVideoConference({
           userId={userId}
           userName={userName}
           isHost={isHost}
+          whiteboardOpen={whiteboardOpen}
+          onToggleWhiteboard={onToggleWhiteboard}
         />
       </div>
     </LayoutContextProvider>

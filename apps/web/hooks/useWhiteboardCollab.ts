@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import * as Y from 'yjs';
-import { createSocketClient } from '@/lib/socket';
 
 const AWARENESS_COLORS = ['#4f46e5', '#db2777', '#059669', '#ea580c', '#0891b2', '#7c3aed'];
 
@@ -52,9 +51,11 @@ const sortElementsByIndex = (elements: any[]): any[] =>
 export const useWhiteboardCollab = ({
   roomId,
   user,
+  socket,
 }: {
   roomId: string;
   user: WhiteboardUser;
+  socket: Socket | null;
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([
@@ -200,24 +201,28 @@ export const useWhiteboardCollab = ({
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId) {
+    if (!roomId || !socket) {
       return;
     }
 
-    const socket = createSocketClient();
     socketRef.current = socket;
 
-    socket.on('connect', () => {
+    const joinWhiteboard = () => {
       setIsConnected(true);
       isHydratedRef.current = false;
       socket.emit('join-whiteboard-room', {
         roomId,
         color: localColor,
       });
-      // Request the full Yjs CRDT state so the local Y.Doc starts from the
-      // same baseline as the rest of the room.
       socket.emit('whiteboard-yjs-sync', { roomId });
-    });
+    };
+
+    // If the socket is already connected when the whiteboard mounts, join immediately.
+    if (socket.connected) {
+      joinWhiteboard();
+    } else {
+      socket.on('connect', joinWhiteboard);
+    }
 
     socket.on('disconnect', () => {
       setIsConnected(false);
@@ -273,14 +278,20 @@ export const useWhiteboardCollab = ({
     );
 
     return () => {
+      socket.off('connect', joinWhiteboard);
+      socket.off('disconnect');
+      socket.off('whiteboard-scene-state');
+      socket.off('whiteboard-yjs-sync');
+      socket.off('whiteboard-yjs-update');
+      socket.off('whiteboard-scene-update');
+      socket.off('whiteboard-presence-state');
       if (socket.connected) {
         socket.emit('leave-whiteboard-room', { roomId });
       }
-      socket.disconnect();
       socketRef.current = null;
       isHydratedRef.current = false;
     };
-  }, [applySceneFromJson, applyYjsElementsToScene, localColor, roomId, user.name, user.userId]);
+  }, [applySceneFromJson, applyYjsElementsToScene, localColor, roomId, socket]);
 
   const handleSceneChange = useCallback((elements: readonly any[]) => {
     if (isApplyingRemoteRef.current) {

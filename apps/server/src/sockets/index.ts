@@ -48,6 +48,28 @@ const activeRooms = new Map<string, RoomState>();
 const whiteboardRooms = new Map<string, WhiteboardState>();
 const whiteboardSnapshots = new Map<string, string>();
 const whiteboardParticipants = new Map<string, Map<string, WhiteboardParticipant>>();
+// Debounce timers for persisting Yjs state to DB (one timer per roomId)
+const whiteboardPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const persistWhiteboardState = (roomId: string): void => {
+  const existing = whiteboardPersistTimers.get(roomId);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(async () => {
+    whiteboardPersistTimers.delete(roomId);
+    const state = whiteboardRooms.get(roomId);
+    if (!state) return;
+    try {
+      const encoded = Buffer.from(Y.encodeStateAsUpdate(state.doc));
+      await Room.findOneAndUpdate({ roomId }, { whiteboardState: encoded });
+      console.log(`💾 Whiteboard state persisted for room ${roomId}`);
+    } catch (err) {
+      console.error(`Failed to persist whiteboard state for room ${roomId}:`, err);
+    }
+  }, 3000);
+
+  whiteboardPersistTimers.set(roomId, timer);
+};
 
 const getOrCreateWhiteboardState = (roomId: string): WhiteboardState => {
   const existing = whiteboardRooms.get(roomId);
@@ -361,10 +383,24 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     });
 
     // CRDT whiteboard sync (Yjs)
-    socket.on('whiteboard-yjs-sync', ({ roomId }) => {
-      const whiteboardState = getOrCreateWhiteboardState(roomId);
-      const fullUpdate = Y.encodeStateAsUpdate(whiteboardState.doc);
+    socket.on('whiteboard-yjs-sync', async ({ roomId }) => {
+      const state = getOrCreateWhiteboardState(roomId);
 
+      // If the in-memory doc is empty, try to hydrate from DB.
+      const isEmpty = state.doc.getMap('elements').size === 0;
+      if (isEmpty) {
+        try {
+          const room = await Room.findOne({ roomId }, 'whiteboardState').lean();
+          if (room?.whiteboardState && room.whiteboardState.length > 0) {
+            Y.applyUpdate(state.doc, new Uint8Array(room.whiteboardState));
+            console.log(`📚 Loaded whiteboard state from DB for room ${roomId}`);
+          }
+        } catch (err) {
+          console.error(`Failed to load whiteboard state for room ${roomId}:`, err);
+        }
+      }
+
+      const fullUpdate = Y.encodeStateAsUpdate(state.doc);
       socket.emit('whiteboard-yjs-sync', {
         roomId,
         update: Array.from(fullUpdate),
@@ -383,6 +419,9 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         roomId,
         update: Array.from(updateBytes),
       });
+
+      // Debounce-persist the updated Yjs state to MongoDB.
+      persistWhiteboardState(roomId);
     });
 
     socket.on('whiteboard-awareness-update', ({ roomId, update, userId }) => {

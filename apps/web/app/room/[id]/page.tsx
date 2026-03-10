@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { roomApi } from "@/lib/room";
@@ -10,6 +9,7 @@ import { SocketProvider } from "@/contexts/SocketContext";
 import ClassroomOverlay from "@/components/ClassroomOverlay";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import RoomSidebar from "@/components/RoomSidebar";
+import Whiteboard from "@/components/Whiteboard";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
 import "@livekit/components-styles/index.css";
@@ -29,6 +29,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [livekitUrl, setLivekitUrl] = useState<string>("");
   const [isHost, setIsHost] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
 
   useEffect(() => {
@@ -110,27 +111,6 @@ export default function RoomPage({ params }: RoomPageProps) {
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         {/* Video area */}
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-          <Link
-            href={`/whiteboard/${roomId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              zIndex: 20,
-              background: '#ffffff',
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              padding: '8px 12px',
-              fontSize: 14,
-              fontWeight: 600,
-              color: '#111827',
-              textDecoration: 'none',
-            }}
-          >
-            Open Whiteboard
-          </Link>
           <LiveKitRoom
             token={livekitToken}
             serverUrl={livekitUrl}
@@ -147,11 +127,26 @@ export default function RoomPage({ params }: RoomPageProps) {
               userId={user.id}
               userName={user.name}
               isHost={isHost}
+              whiteboardOpen={whiteboardOpen}
+              onToggleWhiteboard={() => setWhiteboardOpen(v => !v)}
             />
             <RoomAudioRenderer />
             <ClassroomOverlay />
           </LiveKitRoom>
         </div>
+
+        {/* Whiteboard panel — inline, toggled by control bar */}
+        {whiteboardOpen && (
+          <div style={{ width: '45%', minWidth: 0, height: '100vh' }}>
+            <Whiteboard
+              roomId={roomId}
+              userId={user.id}
+              userName={user.name}
+              isHost={isHost}
+              onClose={() => setWhiteboardOpen(false)}
+            />
+          </div>
+        )}
 
         {/* Sidebar — participants + chat, visible to everyone */}
         <RoomSidebar

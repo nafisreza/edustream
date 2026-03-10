@@ -10,6 +10,8 @@ interface CustomControlBarProps {
   userId: string;
   userName: string;
   isHost: boolean;
+  whiteboardOpen: boolean;
+  onToggleWhiteboard: () => void;
 }
 
 export default function CustomControlBar({
@@ -17,6 +19,8 @@ export default function CustomControlBar({
   userId,
   userName,
   isHost,
+  whiteboardOpen,
+  onToggleWhiteboard,
 }: CustomControlBarProps) {
   const room = useRoomContext();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
@@ -119,6 +123,17 @@ export default function CustomControlBar({
           activeIcon={<ScreenShareIcon />}
           inactiveIcon={<ScreenShareIcon />}
           inactiveClass="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+          activeClass="text-white hover:bg-white/10"
+        />
+
+        {/* Whiteboard */}
+        <ControlButton
+          active={!whiteboardOpen}
+          onClick={onToggleWhiteboard}
+          label={whiteboardOpen ? 'Hide board' : 'Whiteboard'}
+          activeIcon={<WhiteboardIcon />}
+          inactiveIcon={<WhiteboardIcon />}
+          inactiveClass="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
           activeClass="text-white hover:bg-white/10"
         />
 
@@ -290,6 +305,15 @@ function ScreenShareIcon() {
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
         d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function WhiteboardIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+        d="M9 12h6m-3-3v6M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z" />
     </svg>
   );
 }

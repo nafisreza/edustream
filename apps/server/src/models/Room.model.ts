@@ -15,6 +15,7 @@ export interface IRoom extends Document {
   hostName: string;
   participants: IParticipant[];
   isActive: boolean;
+  whiteboardState?: Buffer;
   settings: {
     maxParticipants: number;
     autoMuteOnJoin: boolean;
@@ -75,6 +76,10 @@ const roomSchema = new Schema<IRoom>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    whiteboardState: {
+      type: Buffer,
+      default: null,
     },
     settings: {
       maxParticipants: {
