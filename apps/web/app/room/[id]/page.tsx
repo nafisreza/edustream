@@ -125,21 +125,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     );
   }
 
-  // Waiting for host approval — must be checked before the livekitToken guard because
-  // the token is intentionally empty while the student is pending.
-  if (waitingRoom && user && roomId) {
-    return (
-      <WaitingRoomView
-        roomId={roomId}
-        onApproved={() => {
-          setWaitingRoom(false);
-          loadRoom();
-        }}
-      />
-    );
-  }
-
-  if (!user || !roomData || !livekitToken) return null;
+  if (!user || !roomData) return null;
 
   if (!shouldConnect) {
     return (
@@ -156,6 +142,22 @@ export default function RoomPage({ params }: RoomPageProps) {
       />
     );
   }
+
+  // Waiting for host approval should happen only after the participant confirms
+  // joining from the preview screen.
+  if (waitingRoom && user && roomId) {
+    return (
+      <WaitingRoomView
+        roomId={roomId}
+        onApproved={() => {
+          setWaitingRoom(false);
+          loadRoom();
+        }}
+      />
+    );
+  }
+
+  if (!livekitToken) return null;
 
   return (
     <SocketProvider
