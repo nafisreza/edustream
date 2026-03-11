@@ -34,18 +34,29 @@ export default function Home() {
                 <div className="flex justify-center">
                   {isLoading ? null : user ? (
                     <div className="flex flex-col gap-3 sm:flex-row">
-                      <Link
-                        href="/create"
-                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                      >
-                        Create Room
-                      </Link>
-                      <Link
-                        href="/join"
-                        className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
-                      >
-                        Join Room
-                      </Link>
+                      {user.role === 'teacher' ? (
+                        <>
+                          <Link
+                            href="/create"
+                            className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
+                          >
+                            Create Room
+                          </Link>
+                          <Link
+                            href="/recordings"
+                            className="inline-flex h-14 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm border border-white/40 px-8 text-base font-semibold text-white shadow-sm transition-colors hover:bg-white/30"
+                          >
+                            Recordings
+                          </Link>
+                        </>
+                      ) : (
+                        <Link
+                          href="/join"
+                          className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-8 text-base font-semibold text-[#6B46C1] shadow-sm transition-colors hover:bg-gray-50"
+                        >
+                          Join Room
+                        </Link>
+                      )}
                     </div>
                   ) : (
                     <Link

@@ -5,8 +5,11 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { connectDatabase } from './config/database';
+import path from 'path';
+import fs from 'fs';
 import authRoutes from './routes/auth.routes';
 import roomRoutes from './routes/room.routes';
+import recordingRoutes from './routes/recording.routes';
 import { initializeSocketHandlers } from './sockets';
 
 // Load environment variables
@@ -41,6 +44,11 @@ app.get('/health', (_req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/recordings', recordingRoutes);
+
+// Serve recording files (host-only access is enforced via the download route)
+const recordingsDir = process.env.RECORDINGS_DIR || path.join(process.cwd(), 'recordings');
+fs.mkdirSync(recordingsDir, { recursive: true });
 
 // Initialize Socket.io handlers
 initializeSocketHandlers(io);

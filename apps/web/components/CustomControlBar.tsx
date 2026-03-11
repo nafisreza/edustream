@@ -6,6 +6,7 @@ import { ConnectionQuality, ConnectionState, ParticipantEvent } from 'livekit-cl
 import { toast } from 'react-hot-toast';
 import { useSocket } from '@/contexts/SocketContext';
 import RoomSettings from './RoomSettings';
+import { recordingApi } from '@/lib/recording';
 
 interface CustomControlBarProps {
   roomId: string;
@@ -41,6 +42,22 @@ export default function CustomControlBar({
   const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(ConnectionQuality.Unknown);
   // Keep local settings state so the modal reflects the latest saved values.
   const [currentSettings, setCurrentSettings] = useState(initialSettings);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [recordingStart, setRecordingStart] = useState<Date | null>(null);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+
+  /* ── Fetch initial recording status on mount (host only) ── */
+  useEffect(() => {
+    if (!isHost) return;
+    recordingApi.getRecordingStatus(roomId).then(({ isRecording: active, recording }) => {
+      if (active && recording) {
+        setIsRecording(true);
+        setRecordingId(recording.recordingId);
+        setRecordingStart(new Date(recording.startedAt));
+      }
+    }).catch(() => { /* ignore */ });
+  }, [isHost, roomId]);
 
   /* ── Notify host when hand raised/lowered ─────────────── */
   useEffect(() => {
@@ -91,6 +108,30 @@ export default function CustomControlBar({
     } else {
       socket.emit('raise-hand', { roomId, userId, name: userName });
       setHandRaised(true);
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (recordingLoading) return;
+    setRecordingLoading(true);
+    try {
+      if (isRecording && recordingId) {
+        await recordingApi.stopRecording(roomId);
+        setIsRecording(false);
+        setRecordingId(null);
+        setRecordingStart(null);
+        toast.success('Recording stopped and saved');
+      } else {
+        const rec = await recordingApi.startRecording(roomId);
+        setIsRecording(true);
+        setRecordingId(rec.recordingId);
+        setRecordingStart(new Date(rec.startedAt));
+        toast.success('Recording started');
+      }
+    } catch {
+      toast.error(isRecording ? 'Failed to stop recording' : 'Failed to start recording');
+    } finally {
+      setRecordingLoading(false);
     }
   };
 
@@ -158,6 +199,25 @@ export default function CustomControlBar({
           inactiveClass="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
           activeClass="text-white hover:bg-white/10"
         />
+
+        {/* Record — host only */}
+        {isHost && (
+          <button
+            onClick={toggleRecording}
+            disabled={recordingLoading}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+            className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg transition-all min-w-11 disabled:opacity-50 ${
+              isRecording
+                ? 'bg-red-600/30 text-red-400 hover:bg-red-600/40'
+                : 'text-white hover:bg-white/10'
+            }`}
+          >
+            <RecordIcon active={isRecording} />
+            <span className="text-[9px] font-medium leading-none opacity-60">
+              {isRecording ? 'Stop rec' : 'Record'}
+            </span>
+          </button>
+        )}
 
         {/* Raise hand — students only */}
         {!isHost && (
@@ -392,6 +452,25 @@ function SettingsIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
         d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function RecordIcon({ active }: { active: boolean }) {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      {active ? (
+        /* blinking stop square when recording */
+        <rect
+          x="6" y="6" width="12" height="12" rx="2"
+          fill="currentColor"
+          className="animate-pulse"
+        />
+      ) : (
+        /* filled circle dot = record */
+        <circle cx="12" cy="12" r="5" fill="currentColor" />
+      )}
+      <circle cx="12" cy="12" r="10" strokeWidth={1.8} />
     </svg>
   );
 }

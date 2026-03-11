@@ -55,10 +55,20 @@
   - ✅ Connection quality indicator in control bar (`ConnectionQualityBadge` — 3-bar signal icon, reconnecting spinner)
   - ✅ Room settings modal (host only) — max participants, auto-mute on join, waiting room enabled/disabled; persisted to DB via `PATCH /api/rooms/:id/settings`
   - ✅ Settings stale-display bug fixed — `currentSettings` local state + `onSaved` callback keeps modal in sync
+- ✅ **Phase 9 Complete**: Meeting recordings via LiveKit Egress
+  - ✅ Docker infrastructure: Redis + LiveKit Egress service added to `docker-compose.yml`; `egress.yaml` config; `livekit.yaml` updated with Redis address
+  - ✅ `Recording.model.ts` — MongoDB schema (recordingId, roomId, roomName, hostId, egressId, status, startedAt, endedAt, duration, filePath, fileSize)
+  - ✅ `recording.controller.ts` — `startRecording`, `stopRecording`, `getRecordingStatus`, `listRecordings`, `downloadRecording`; path traversal safe (`path.basename`)
+  - ✅ `recording.routes.ts` — authenticated routes: `POST /rooms/:roomId/start`, `POST /rooms/:roomId/stop`, `GET /rooms/:roomId/status`, `GET /`, `GET /:recordingId/download`
+  - ✅ Server `index.ts` updated — mounts `/api/recordings` routes, creates recordings directory on startup
+  - ✅ `CustomControlBar.tsx` — Record button (host only): fetches status on mount, toggles start/stop, blinking-square icon when recording, `RecordIcon` component
+  - ✅ `lib/recording.ts` — `recordingApi` helper (startRecording, stopRecording, getRecordingStatus, listRecordings, getDownloadUrl)
+  - ✅ `/app/recordings/page.tsx` — table of past recordings with date, duration, file size, status badge, download button; empty state; spinner
+  - ✅ `SideNav.tsx` — Recordings link added to navigation
 - ❌ **Phase 7**: UI/UX polish, accessibility, responsive design — not started
 - 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~90% (Backend + Auth + LiveKit streaming + Full classroom management UI + Whiteboard + Connection quality + Room settings complete)**
+**Estimated Completion: ~95% (Backend + Auth + LiveKit streaming + Full classroom management UI + Whiteboard + Connection quality + Room settings + Meeting recordings complete)**
 
 **Last Updated: March 11, 2026**
 
@@ -509,34 +519,3 @@ Connect to deployed backend API
 6. **Screen Share Stream Management**: Handling multiple video tracks per participant correctly
 
 ---
-
-## Recommended Development Order
-
-Start with this sequence for fastest path to working prototype:
-
-1. ✅ Set up backend server (Step 1.1-1.4)
-2. ✅ Implement basic authentication (Step 1.5-1.6)
-3. ✅ Create room creation/joining (Step 2.4-2.6)
-4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **done via LiveKit**
-5. ✅ Add teacher controls (Step 4.2-4.5)
-6. ✅ Custom control bar, sidebar, end meeting, role guards (Step 4.6-4.7)
-7. ❌ Implement whiteboard (Step 5.1-5.4) ← **NEXT UP**
-8. ❌ Polish and test (Step 7.1-7.4)
-9. ❌ Deploy (Step 8.1-8.3)
-
-Skip optional features initially: OAuth, chat, screen sharing, advanced analytics.
-
----
-
-## Final Notes
-
-- **Priority**: Focus on SFU setup (Phase 2) and WebRTC implementation (Phase 3) first
-- **SFU Architecture**: Using LiveKit enables 50+ participant rooms with better performance
-- **LiveKit vs mediasoup**:
-  - **LiveKit**: Faster development, managed cloud option, built-in TURN servers, better documentation
-  - **mediasoup**: More control, self-hosted only, steeper learning curve, more flexibility
-- **Track Renegotiation**: This is critical! Always unpublish/republish tracks when toggling camera/mic, not just enable/disable
-- **Screen Sharing**: Remember it's a separate stream - plan your UI for multiple video tracks
-- **Browser Support**: Chrome/Edge recommended, Safari has WebRTC quirks
-- **Testing**: Test camera on/off cycles extensively, test with real network conditions and multiple devices
-- **Server Resources**: SFU requires more backend resources than mesh, plan accordingly (2-4GB RAM minimum)

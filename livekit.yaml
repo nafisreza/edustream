@@ -10,5 +10,8 @@ rtc:
 keys:
   devkey: devkey
 
+redis:
+  address: redis:6379
+
 logging:
   level: info
