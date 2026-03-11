@@ -3,12 +3,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import * as Y from 'yjs';
-import { createSocketClient } from '@/lib/socket';
 
 const AWARENESS_COLORS = ['#4f46e5', '#db2777', '#059669', '#ea580c', '#0891b2', '#7c3aed'];
 
+// Minimal representation of a single Excalidraw element. We only hard-type
+// the properties we reference; the rest pass through via the index signature.
+type ExcalidrawElementData = {
+  id?: string;
+  version?: number;
+  index?: string;
+  [key: string]: unknown;
+};
+
 type ExcalidrawApiLike = {
-  updateScene: (sceneData: { elements?: any[] }) => void;
+  updateScene: (sceneData: { elements?: ExcalidrawElementData[] }) => void;
 };
 
 type WhiteboardUser = {
@@ -22,7 +30,7 @@ type PresenceUser = {
   color: string;
 };
 
-const safeParseElements = (raw: string | undefined): any[] => {
+const safeParseElements = (raw: string | undefined): ExcalidrawElementData[] => {
   if (!raw) {
     return [];
   }
@@ -40,7 +48,7 @@ const safeParseElements = (raw: string | undefined): any[] => {
 // for z-ordering (e.g. "a0", "a1", "b0", "Zz"). These are alphanumeric
 // tokens designed specifically for lexicographic (string) comparison, so a
 // standard string sort produces the correct rendering order.
-const sortElementsByIndex = (elements: any[]): any[] =>
+const sortElementsByIndex = (elements: ExcalidrawElementData[]): ExcalidrawElementData[] =>
   [...elements].sort((a, b) => {
     const ia: string = a?.index ?? '';
     const ib: string = b?.index ?? '';
@@ -52,18 +60,21 @@ const sortElementsByIndex = (elements: any[]): any[] =>
 export const useWhiteboardCollab = ({
   roomId,
   user,
+  socket,
 }: {
   roomId: string;
   user: WhiteboardUser;
+  socket: Socket | null;
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([
     { userId: user.userId, name: user.name, color: AWARENESS_COLORS[0] ?? '#4f46e5' },
   ]);
+  const [studentDrawingAllowed, setStudentDrawingAllowed] = useState(true);
   const socketRef = useRef<Socket | null>(null);
   const apiRef = useRef<ExcalidrawApiLike | null>(null);
   const isApplyingRemoteRef = useRef(false);
-  const pendingElementsRef = useRef<readonly any[] | null>(null);
+  const pendingElementsRef = useRef<readonly ExcalidrawElementData[] | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSyncedSceneRef = useRef<string>('');
   const isHydratedRef = useRef(false);
@@ -89,7 +100,7 @@ export const useWhiteboardCollab = ({
     const ydoc = ydocRef.current;
     if (ydoc) {
       ydoc.transact(() => {
-        const yElements = ydoc.getMap<any>('elements');
+        const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
         yElements.clear();
         for (const el of elements) {
           if (el?.id) {
@@ -100,8 +111,11 @@ export const useWhiteboardCollab = ({
     }
 
     lastSyncedSceneRef.current = elementsJson ?? '';
-    // Suppress local onChange echo right after remote state application.
-    suppressOutgoingUntilRef.current = Date.now() + 350;
+    // Brief suppress window to catch any immediate Excalidraw echo after
+    // updateScene — 30 ms is enough; 350 ms was silently dropping user strokes.
+    suppressOutgoingUntilRef.current = Date.now() + 30;
+    // Sync pendingElementsRef so any in-flight flush timer uses merged state.
+    pendingElementsRef.current = elements;
     isApplyingRemoteRef.current = true;
     api.updateScene({ elements });
     queueMicrotask(() => {
@@ -117,9 +131,11 @@ export const useWhiteboardCollab = ({
       return;
     }
 
-    const elements = sortElementsByIndex(Array.from(ydoc.getMap<any>('elements').values()));
+    const elements = sortElementsByIndex(Array.from(ydoc.getMap<ExcalidrawElementData>('elements').values()));
     lastSyncedSceneRef.current = JSON.stringify(elements);
-    suppressOutgoingUntilRef.current = Date.now() + 350;
+    suppressOutgoingUntilRef.current = Date.now() + 30;
+    // Sync pendingElementsRef so any in-flight flush timer uses merged state.
+    pendingElementsRef.current = elements;
     isApplyingRemoteRef.current = true;
     api.updateScene({ elements });
     queueMicrotask(() => {
@@ -145,23 +161,20 @@ export const useWhiteboardCollab = ({
     const stateVectorBefore = Y.encodeStateVector(ydoc);
 
     ydoc.transact(() => {
-      const yElements = ydoc.getMap<any>('elements');
+      const yElements = ydoc.getMap<ExcalidrawElementData>('elements');
       const existingIds = new Set(yElements.keys());
       const newIds = new Set<string>();
 
       for (const el of pendingElements) {
         if (el?.id) {
           newIds.add(el.id);
-          // Only write to the Y.Map when the element actually changed.
-          // Use the Excalidraw `version` counter as a cheap fast path; fall
-          // back to a full JSON comparison for elements that lack a version.
+          // Always write — do NOT skip based on version equality.
+          // In-progress elements (active strokes, mid-move text, etc.) update
+          // their geometry on every pointer event but only bump `version` when
+          // the action is committed; skipping same-version writes means peers
+          // never see the element until the user lifts the mouse.
           const current = yElements.get(el.id);
-          const sameVersion =
-            current !== undefined &&
-            typeof el.version === 'number' &&
-            typeof current.version === 'number' &&
-            el.version === current.version;
-          if (!sameVersion && JSON.stringify(current) !== JSON.stringify(el)) {
+          if (JSON.stringify(current) !== JSON.stringify(el)) {
             yElements.set(el.id, el);
           }
         }
@@ -175,8 +188,6 @@ export const useWhiteboardCollab = ({
       }
     });
 
-    // `encodeStateAsUpdate(doc, sv)` returns only the operations that are in
-    // `doc` but not reflected in `sv` — i.e., the incremental delta.
     const update = Y.encodeStateAsUpdate(ydoc, stateVectorBefore);
     if (update.length > 0) {
       socket.emit('whiteboard-yjs-update', {
@@ -200,49 +211,55 @@ export const useWhiteboardCollab = ({
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId) {
+    if (!roomId || !socket) {
       return;
     }
 
-    const socket = createSocketClient();
     socketRef.current = socket;
 
-    socket.on('connect', () => {
+    const joinWhiteboard = () => {
       setIsConnected(true);
       isHydratedRef.current = false;
       socket.emit('join-whiteboard-room', {
         roomId,
         color: localColor,
       });
-      // Request the full Yjs CRDT state so the local Y.Doc starts from the
-      // same baseline as the rest of the room.
-      socket.emit('whiteboard-yjs-sync', { roomId });
-    });
+      // The server responds to join-whiteboard-room with whiteboard-yjs-sync
+      // containing the full room state — no separate sync request needed.
+    };
+
+    // If the socket is already connected when the whiteboard mounts, join immediately.
+    if (socket.connected) {
+      joinWhiteboard();
+    } else {
+      socket.on('connect', joinWhiteboard);
+    }
 
     socket.on('disconnect', () => {
       setIsConnected(false);
     });
 
-    // Full JSON snapshot sent automatically on join (backward compat / initial
-    // state for rooms that were populated before Yjs was introduced).
+    // Full JSON snapshot sent on join (backward compat fallback).
+    // Only apply it if Yjs hasn't already hydrated the scene.
     socket.on('whiteboard-scene-state', ({ elementsJson }: { elementsJson: string }) => {
-      applySceneFromJson(elementsJson);
-      isHydratedRef.current = true;
+      if (!isHydratedRef.current) {
+        applySceneFromJson(elementsJson);
+        isHydratedRef.current = true;
+      }
     });
 
-    // Full Yjs state response — seeds the local Y.Doc and updates Excalidraw
-    // if the server doc already contains elements (overrides the JSON snapshot).
+    // Full Yjs state response — seeds the local Y.Doc and updates Excalidraw.
+    // Always mark hydrated so we don't double-apply the JSON fallback.
     socket.on('whiteboard-yjs-sync', ({ update }: { update: number[] }) => {
       const ydoc = ydocRef.current;
       if (!ydoc || !update?.length) {
+        // Even an empty sync means the server has processed our request.
+        isHydratedRef.current = true;
         return;
       }
       Y.applyUpdate(ydoc, new Uint8Array(update));
-      const yElements = ydoc.getMap<any>('elements');
-      if (yElements.size > 0) {
-        applyYjsElementsToScene();
-        isHydratedRef.current = true;
-      }
+      applyYjsElementsToScene();
+      isHydratedRef.current = true;
     });
 
     // Incremental CRDT delta broadcast from a peer.
@@ -272,17 +289,28 @@ export const useWhiteboardCollab = ({
       }
     );
 
+    socket.on('whiteboard-draw-permission', ({ allowed }: { allowed: boolean }) => {
+      setStudentDrawingAllowed(allowed);
+    });
+
     return () => {
+      socket.off('connect', joinWhiteboard);
+      socket.off('disconnect');
+      socket.off('whiteboard-scene-state');
+      socket.off('whiteboard-yjs-sync');
+      socket.off('whiteboard-yjs-update');
+      socket.off('whiteboard-scene-update');
+      socket.off('whiteboard-presence-state');
+      socket.off('whiteboard-draw-permission');
       if (socket.connected) {
         socket.emit('leave-whiteboard-room', { roomId });
       }
-      socket.disconnect();
       socketRef.current = null;
       isHydratedRef.current = false;
     };
-  }, [applySceneFromJson, applyYjsElementsToScene, localColor, roomId, user.name, user.userId]);
+  }, [applySceneFromJson, applyYjsElementsToScene, localColor, roomId, socket]);
 
-  const handleSceneChange = useCallback((elements: readonly any[]) => {
+  const handleSceneChange = useCallback((elements: readonly ExcalidrawElementData[]) => {
     if (isApplyingRemoteRef.current) {
       return;
     }
@@ -294,17 +322,17 @@ export const useWhiteboardCollab = ({
     }
 
     pendingElementsRef.current = elements ?? [];
-    if (syncTimerRef.current) {
-      return;
-    }
 
-    // Throttle CRDT delta writes — 150 ms gives a good balance between
-    // collaboration responsiveness and reduced bandwidth vs the old 80 ms
-    // full-scene JSON approach.
+    // Cancel any pending flush and restart the timer so every change
+    // (including mid-stroke pointer moves) schedules a fresh flush.
+    // 50 ms keeps collaboration snappy without flooding the socket.
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+    }
     syncTimerRef.current = setTimeout(() => {
       syncTimerRef.current = null;
       flushPendingSceneToServer();
-    }, 150);
+    }, 50);
   }, [flushPendingSceneToServer]);
 
   const setExcalidrawApi = useCallback((api: ExcalidrawApiLike | null) => {
@@ -316,7 +344,7 @@ export const useWhiteboardCollab = ({
     if (ydoc) {
       const stateVectorBefore = Y.encodeStateVector(ydoc);
       ydoc.transact(() => {
-        ydoc.getMap<any>('elements').clear();
+        ydoc.getMap<ExcalidrawElementData>('elements').clear();
       });
       const update = Y.encodeStateAsUpdate(ydoc, stateVectorBefore);
       if (update.length > 0) {
@@ -354,5 +382,6 @@ export const useWhiteboardCollab = ({
     handleSceneChange,
     setExcalidrawApi,
     clearBoard,
+    studentDrawingAllowed,
   };
 };

@@ -43,7 +43,7 @@ export default function Navbar() {
       await logout();
       toast.success("Logged out successfully!");
       router.push("/");
-    } catch (error) {
+    } catch {
       toast.error("Failed to logout");
     }
   };
@@ -82,32 +82,6 @@ export default function Navbar() {
         <div className="flex items-center gap-4 ml-auto">
           {user ? (
             <>
-              {user.role === 'teacher' && (
-                <Link
-                  href="/create"
-                  className={`text-sm font-medium transition-colors ${
-                    isLandingPage
-                      ? isScrolled
-                        ? "text-gray-700 hover:text-gray-900"
-                        : "text-white hover:text-white/80"
-                      : "text-gray-700 hover:text-gray-900"
-                  }`}
-                >
-                  Create Room
-                </Link>
-              )}
-              <Link
-                href="/join"
-                className={`text-sm font-medium transition-colors ${
-                  isLandingPage
-                    ? isScrolled
-                      ? "text-gray-700 hover:text-gray-900"
-                      : "text-white hover:text-white/80"
-                    : "text-gray-700 hover:text-gray-900"
-                }`}
-              >
-                Join Room
-              </Link>
               <Link
                 href="/profile"
                 aria-label="Profile"

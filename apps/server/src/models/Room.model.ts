@@ -4,6 +4,7 @@ export interface IParticipant {
   userId: string;
   name: string;
   role: 'host' | 'participant';
+  status: 'active' | 'pending';
   joinedAt: Date;
 }
 
@@ -15,6 +16,7 @@ export interface IRoom extends Document {
   hostName: string;
   participants: IParticipant[];
   isActive: boolean;
+  whiteboardState?: Buffer;
   settings: {
     maxParticipants: number;
     autoMuteOnJoin: boolean;
@@ -37,6 +39,11 @@ const participantSchema = new Schema<IParticipant>({
     type: String,
     enum: ['host', 'participant'],
     default: 'participant',
+  },
+  status: {
+    type: String,
+    enum: ['active', 'pending'],
+    default: 'active',
   },
   joinedAt: {
     type: Date,
@@ -75,6 +82,10 @@ const roomSchema = new Schema<IRoom>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    whiteboardState: {
+      type: Buffer,
+      default: null,
     },
     settings: {
       maxParticipants: {

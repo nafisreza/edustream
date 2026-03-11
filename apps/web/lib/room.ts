@@ -29,13 +29,22 @@ export const roomApi = {
   },
 
   getRoomToken: async (roomId: string): Promise<{
-    token: string;
-    url: string;
-    roomName: string;
-    participantName: string;
-    isHost: boolean;
+    token?: string;
+    url?: string;
+    roomName?: string;
+    participantName?: string;
+    isHost?: boolean;
+    pending?: boolean;
   }> => {
     const response = await apiClient.get(`/api/rooms/${roomId}/token`);
+    return response.data;
+  },
+
+  updateRoomSettings: async (
+    roomId: string,
+    settings: { maxParticipants?: number; autoMuteOnJoin?: boolean; waitingRoomEnabled?: boolean }
+  ): Promise<{ message: string; settings: { maxParticipants: number; autoMuteOnJoin: boolean; waitingRoomEnabled: boolean } }> => {
+    const response = await apiClient.patch(`/api/rooms/${roomId}/settings`, settings);
     return response.data;
   },
 };

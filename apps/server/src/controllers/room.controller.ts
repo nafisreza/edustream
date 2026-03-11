@@ -40,6 +40,7 @@ export const createRoom = async (req: AuthenticatedRequest, res: Response): Prom
             userId,
             name: userName,
             role: 'host',
+            status: 'active',
             joinedAt: new Date(),
           },
         ],
@@ -133,30 +134,32 @@ export const joinRoom = async (req: AuthenticatedRequest, res: Response): Promis
       const existingParticipant = room.participants.find((p) => p.userId === userId);
       if (existingParticipant) {
         res.status(200).json({
-          message: 'Already in room',
+          message: existingParticipant.status === 'pending' ? 'Already waiting for host approval' : 'Already in room',
           room: {
             roomId: room.roomId,
             name: room.name,
             hostId: room.hostId,
             waitingRoomEnabled: room.settings.waitingRoomEnabled,
           },
+          pending: existingParticipant.status === 'pending',
         });
         return;
       }
 
-      // Add participant to room
+      // Add participant to room — pending if waiting room is enabled.
       room.participants.push({
         userId,
         name,
         role: 'participant',
+        status: room.settings.waitingRoomEnabled ? 'pending' : 'active',
         joinedAt: new Date(),
       });
 
       await room.save();
 
       res.status(200).json({
-        message: room.settings.waitingRoomEnabled 
-          ? 'Join request sent. Waiting for host approval.' 
+        message: room.settings.waitingRoomEnabled
+          ? 'Join request sent. Waiting for host approval.'
           : 'Joined room successfully',
         room: {
           roomId: room.roomId,
@@ -164,6 +167,7 @@ export const joinRoom = async (req: AuthenticatedRequest, res: Response): Promis
           hostId: room.hostId,
           waitingRoomEnabled: room.settings.waitingRoomEnabled,
         },
+        pending: room.settings.waitingRoomEnabled,
       });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -204,6 +208,50 @@ export const closeRoom = async (req: AuthenticatedRequest, res: Response): Promi
   }
 };
 
+// Update room settings (host only)
+export const updateRoomSettings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    const room = await Room.findOne({ roomId: id, isActive: true });
+
+    if (!room) {
+      res.status(404).json({ message: 'Room not found or has been closed' });
+      return;
+    }
+
+    if (room.hostId !== userId) {
+      res.status(403).json({ message: 'Only the host can update room settings' });
+      return;
+    }
+
+    const { maxParticipants, autoMuteOnJoin, waitingRoomEnabled } = req.body;
+
+    if (maxParticipants !== undefined) {
+      const max = Number(maxParticipants);
+      if (!Number.isInteger(max) || max < 2 || max > 100) {
+        res.status(400).json({ message: 'maxParticipants must be an integer between 2 and 100' });
+        return;
+      }
+      room.settings.maxParticipants = max;
+    }
+    if (autoMuteOnJoin !== undefined) {
+      room.settings.autoMuteOnJoin = Boolean(autoMuteOnJoin);
+    }
+    if (waitingRoomEnabled !== undefined) {
+      room.settings.waitingRoomEnabled = Boolean(waitingRoomEnabled);
+    }
+
+    await room.save();
+
+    res.status(200).json({ message: 'Settings updated', settings: room.settings });
+  } catch (error) {
+    console.error('Update room settings error:', error);
+    res.status(500).json({ message: 'Server error while updating settings' });
+  }
+};
+
 // Get LiveKit access token for a room
 export const getRoomToken = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -227,6 +275,12 @@ export const getRoomToken = async (req: AuthenticatedRequest, res: Response): Pr
     const participant = room.participants.find((p) => p.userId === userId);
     if (!participant) {
       res.status(403).json({ message: 'You must join the room first' });
+      return;
+    }
+
+    // Participant is still awaiting host approval — return pending flag, no token.
+    if (participant.status === 'pending') {
+      res.status(200).json({ pending: true });
       return;
     }
 

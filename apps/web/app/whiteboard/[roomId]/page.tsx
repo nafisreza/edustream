@@ -62,6 +62,7 @@ export default function WhiteboardPage({ params }: WhiteboardPageProps) {
         userId: user?.id ?? '',
         name: user?.name ?? 'Anonymous',
       },
+      socket: null,
     });
 
   if (isLoading || isValidatingRoom) {

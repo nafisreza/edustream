@@ -1,15 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useLocalParticipant, useRoomContext } from '@livekit/components-react';
+import { useConnectionState, useLocalParticipant, useRoomContext } from '@livekit/components-react';
+import { ConnectionQuality, ConnectionState, ParticipantEvent } from 'livekit-client';
 import { toast } from 'react-hot-toast';
 import { useSocket } from '@/contexts/SocketContext';
+import RoomSettings from './RoomSettings';
+import { recordingApi } from '@/lib/recording';
 
 interface CustomControlBarProps {
   roomId: string;
   userId: string;
   userName: string;
   isHost: boolean;
+  whiteboardOpen: boolean;
+  onToggleWhiteboard: () => void;
+  initialSettings?: {
+    maxParticipants: number;
+    autoMuteOnJoin: boolean;
+    waitingRoomEnabled: boolean;
+  };
 }
 
 export default function CustomControlBar({
@@ -17,13 +27,37 @@ export default function CustomControlBar({
   userId,
   userName,
   isHost,
+  whiteboardOpen,
+  onToggleWhiteboard,
+  initialSettings,
 }: CustomControlBarProps) {
   const room = useRoomContext();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
+  const connectionState = useConnectionState();
   const { socket } = useSocket();
 
   const [handRaised, setHandRaised] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(ConnectionQuality.Unknown);
+  // Keep local settings state so the modal reflects the latest saved values.
+  const [currentSettings, setCurrentSettings] = useState(initialSettings);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [recordingStart, setRecordingStart] = useState<Date | null>(null);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+
+  /* ── Fetch initial recording status on mount (host only) ── */
+  useEffect(() => {
+    if (!isHost) return;
+    recordingApi.getRecordingStatus(roomId).then(({ isRecording: active, recording }) => {
+      if (active && recording) {
+        setIsRecording(true);
+        setRecordingId(recording.recordingId);
+        setRecordingStart(new Date(recording.startedAt));
+      }
+    }).catch(() => { /* ignore */ });
+  }, [isHost, roomId]);
 
   /* ── Notify host when hand raised/lowered ─────────────── */
   useEffect(() => {
@@ -40,6 +74,14 @@ export default function CustomControlBar({
     socket.on('hand-raised', handleHandRaised);
     return () => { socket.off('hand-raised', handleHandRaised); };
   }, [socket, isHost]);
+
+  /* ── Track connection quality ─────────────────────────── */
+  useEffect(() => {
+    setConnectionQuality(localParticipant.connectionQuality);
+    const handler = (cq: ConnectionQuality) => setConnectionQuality(cq);
+    localParticipant.on(ParticipantEvent.ConnectionQualityChanged, handler);
+    return () => { localParticipant.off(ParticipantEvent.ConnectionQualityChanged, handler); };
+  }, [localParticipant]);
 
   /* ── Controls ─────────────────────────────────────────── */
   const toggleMic = async () => {
@@ -69,6 +111,30 @@ export default function CustomControlBar({
     }
   };
 
+  const toggleRecording = async () => {
+    if (recordingLoading) return;
+    setRecordingLoading(true);
+    try {
+      if (isRecording && recordingId) {
+        await recordingApi.stopRecording(roomId);
+        setIsRecording(false);
+        setRecordingId(null);
+        setRecordingStart(null);
+        toast.success('Recording stopped and saved');
+      } else {
+        const rec = await recordingApi.startRecording(roomId);
+        setIsRecording(true);
+        setRecordingId(rec.recordingId);
+        setRecordingStart(new Date(rec.startedAt));
+        toast.success('Recording started');
+      }
+    } catch {
+      toast.error(isRecording ? 'Failed to stop recording' : 'Failed to start recording');
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
   const leaveRoom = async () => {
     setLeaving(true);
     toast.success('Left the room');
@@ -84,7 +150,8 @@ export default function CustomControlBar({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-between bg-gray-950/90 backdrop-blur-md border-t border-white/10 px-4 py-2">
+    <>
+      <div className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-between bg-gray-950/90 backdrop-blur-md border-t border-white/10 px-4 py-2">
 
       {/* Left — room code */}
       <RoomCodeBadge roomId={roomId} />
@@ -122,6 +189,36 @@ export default function CustomControlBar({
           activeClass="text-white hover:bg-white/10"
         />
 
+        {/* Whiteboard */}
+        <ControlButton
+          active={!whiteboardOpen}
+          onClick={onToggleWhiteboard}
+          label={whiteboardOpen ? 'Hide board' : 'Whiteboard'}
+          activeIcon={<WhiteboardIcon />}
+          inactiveIcon={<WhiteboardIcon />}
+          inactiveClass="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+          activeClass="text-white hover:bg-white/10"
+        />
+
+        {/* Record — host only */}
+        {isHost && (
+          <button
+            onClick={toggleRecording}
+            disabled={recordingLoading}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+            className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg transition-all min-w-11 disabled:opacity-50 ${
+              isRecording
+                ? 'bg-red-600/30 text-red-400 hover:bg-red-600/40'
+                : 'text-white hover:bg-white/10'
+            }`}
+          >
+            <RecordIcon active={isRecording} />
+            <span className="text-[9px] font-medium leading-none opacity-60">
+              {isRecording ? 'Stop rec' : 'Record'}
+            </span>
+          </button>
+        )}
+
         {/* Raise hand — students only */}
         {!isHost && (
           <>
@@ -139,8 +236,18 @@ export default function CustomControlBar({
         )}
       </div>
 
-      {/* Right — leave / end */}
+      {/* Right — connection quality, settings, leave / end */}
       <div className="flex items-center gap-2">
+        <ConnectionQualityBadge quality={connectionQuality} state={connectionState} />
+        {isHost && (
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="Room settings"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <SettingsIcon />
+          </button>
+        )}
         {isHost && (
           <button
             onClick={endMeeting}
@@ -163,6 +270,15 @@ export default function CustomControlBar({
         </button>
       </div>
     </div>
+    {settingsOpen && (currentSettings ?? initialSettings) && (
+      <RoomSettings
+        roomId={roomId}
+        initialSettings={(currentSettings ?? initialSettings)!}
+        onSaved={(s) => setCurrentSettings(s)}
+        onClose={() => setSettingsOpen(false)}
+      />
+    )}
+    </>
   );
 }
 
@@ -294,6 +410,15 @@ function ScreenShareIcon() {
   );
 }
 
+function WhiteboardIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+        d="M9 12h6m-3-3v6M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z" />
+    </svg>
+  );
+}
+
 function HandIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,5 +443,93 @@ function PhoneOffIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
         d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a16.424 16.424 0 0114.95 9.97M5.75 11.5a16.42 16.42 0 001.25 3.5l2-2a3 3 0 014.24 0l2.12 2.12A16.37 16.37 0 0021 12" />
     </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function RecordIcon({ active }: { active: boolean }) {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      {active ? (
+        /* blinking stop square when recording */
+        <rect
+          x="6" y="6" width="12" height="12" rx="2"
+          fill="currentColor"
+          className="animate-pulse"
+        />
+      ) : (
+        /* filled circle dot = record */
+        <circle cx="12" cy="12" r="5" fill="currentColor" />
+      )}
+      <circle cx="12" cy="12" r="10" strokeWidth={1.8} />
+    </svg>
+  );
+}
+
+/* ── Connection quality badge ───────────────────────────── */
+function ConnectionQualityBadge({
+  quality,
+  state,
+}: {
+  quality: ConnectionQuality;
+  state: ConnectionState;
+}) {
+  if (state === ConnectionState.Reconnecting) {
+    return (
+      <div className="flex flex-col items-center gap-0.5 px-1.5 py-1 opacity-70" title="Reconnecting…">
+        <div className="w-4 h-4 rounded-full border-2 border-yellow-400 border-t-transparent animate-spin" />
+        <span className="text-[9px] text-yellow-400 font-medium leading-none">Sync…</span>
+      </div>
+    );
+  }
+
+  if (state !== ConnectionState.Connected) return null;
+
+  const activeCount =
+    quality === ConnectionQuality.Excellent ? 3
+    : quality === ConnectionQuality.Good ? 2
+    : quality === ConnectionQuality.Poor ? 1
+    : 0;
+
+  const barColor =
+    quality === ConnectionQuality.Excellent || quality === ConnectionQuality.Good
+      ? '#4ade80'
+      : quality === ConnectionQuality.Poor
+      ? '#facc15'
+      : '#4b5563';
+
+  const label =
+    quality === ConnectionQuality.Excellent ? 'Excellent'
+    : quality === ConnectionQuality.Good ? 'Good'
+    : quality === ConnectionQuality.Poor ? 'Poor'
+    : 'Unknown';
+
+  return (
+    <div
+      className="flex flex-col items-center gap-0.5 px-1.5 py-1 opacity-80"
+      title={`Connection: ${label}`}
+    >
+      <div className="flex items-end gap-px" style={{ height: '16px' }}>
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="w-1 rounded-sm transition-colors"
+            style={{ height: `${i * 4 + 4}px`, backgroundColor: i <= activeCount ? barColor : '#374151' }}
+          />
+        ))}
+      </div>
+      <span className="text-[9px] font-medium leading-none" style={{ color: activeCount > 0 ? barColor : '#6b7280' }}>
+        {label}
+      </span>
+    </div>
   );
 }

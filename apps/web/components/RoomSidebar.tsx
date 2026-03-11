@@ -25,8 +25,6 @@ interface RoomSidebarProps {
   userId: string;
   userName: string;
   isHost: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
 }
 
 export default function RoomSidebar({
@@ -34,12 +32,11 @@ export default function RoomSidebar({
   userId,
   userName,
   isHost,
-  isOpen,
-  onToggle,
 }: RoomSidebarProps) {
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<Tab>('participants');
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Array<{ userId: string; name: string }>>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [unreadChat, setUnreadChat] = useState(0);
@@ -95,12 +92,27 @@ export default function RoomSidebar({
       );
     });
 
+    // Waiting room: host receives these events
+    socket.on('join-request', ({ userId: uid, name }: { userId: string; name: string }) => {
+      setPendingRequests((prev) => {
+        if (prev.find((r) => r.userId === uid)) return prev;
+        return [...prev, { userId: uid, name }];
+      });
+      toast(`🚪 ${name} is waiting to join`, { duration: 6000, position: 'top-right' });
+    });
+
+    socket.on('waiting-student-left', ({ userId: uid }: { userId: string }) => {
+      setPendingRequests((prev) => prev.filter((r) => r.userId !== uid));
+    });
+
     return () => {
       socket.off('room-participants');
       socket.off('user-joined');
       socket.off('user-left');
       socket.off('hand-raised');
       socket.off('hand-lowered');
+      socket.off('join-request');
+      socket.off('waiting-student-left');
     };
   }, [socket]);
 
@@ -110,7 +122,7 @@ export default function RoomSidebar({
 
     const handleMessage = (data: Message) => {
       setMessages((prev) => [...prev, { ...data, timestamp: new Date(data.timestamp) }]);
-      if (activeTab !== 'chat' || !isOpen) {
+      if (activeTab !== 'chat') {
         setUnreadChat((n) => n + 1);
       }
     };
@@ -119,7 +131,7 @@ export default function RoomSidebar({
     return () => {
       socket.off('receive-message', handleMessage);
     };
-  }, [socket, activeTab, isOpen]);
+  }, [socket, activeTab]);
 
   /* ── Auto-scroll chat ─────────────────────────────────── */
   useEffect(() => {
@@ -163,6 +175,20 @@ export default function RoomSidebar({
     // Also emit so the student's button resets (optional, handled client-side for now)
   };
 
+  const admitUser = (targetUserId: string, name: string) => {
+    if (!socket) return;
+    socket.emit('approve-join', { roomId, userId: targetUserId });
+    setPendingRequests((prev) => prev.filter((r) => r.userId !== targetUserId));
+    toast.success(`${name} admitted`, { position: 'top-right' });
+  };
+
+  const rejectUser = (targetUserId: string, name: string) => {
+    if (!socket) return;
+    socket.emit('reject-join', { roomId, userId: targetUserId });
+    setPendingRequests((prev) => prev.filter((r) => r.userId !== targetUserId));
+    toast(`${name}'s request declined`, { position: 'top-right', style: { color: '#6b7280' } });
+  };
+
   /* ── Chat send ────────────────────────────────────────── */
   const sendMessage = () => {
     if (!socket || !chatInput.trim()) return;
@@ -191,32 +217,16 @@ export default function RoomSidebar({
     return a.name.localeCompare(b.name);
   });
 
-  /* ── Collapsed state ─────────────────────────────────── */
-  if (!isOpen) {
-    return (
-      <button
-        onClick={onToggle}
-        title="Open panel"
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-50 w-8 h-20 bg-gray-800 text-white flex items-center justify-center rounded-l-lg shadow-lg hover:bg-gray-700 transition-colors"
-        style={{ writingMode: 'vertical-rl' }}
-      >
-        <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    );
-  }
-
   return (
-    <div className="flex flex-col w-72 bg-white border-l border-gray-200 shadow-xl h-full shrink-0">
+    <div className="flex flex-col w-72 bg-gray-900 border-l border-gray-700 h-full shrink-0">
       {/* Header with tabs */}
-      <div className="flex items-center border-b border-gray-200">
+      <div className="flex items-center border-b border-gray-700 bg-gray-900">
         <button
           onClick={() => switchTab('participants')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'participants'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-blue-400 text-blue-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,8 +240,8 @@ export default function RoomSidebar({
           onClick={() => switchTab('chat')}
           className={`flex-1 relative flex items-center justify-center gap-1.5 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'chat'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-blue-400 text-blue-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,17 +254,6 @@ export default function RoomSidebar({
             </span>
           )}
         </button>
-
-        {/* Collapse button */}
-        <button
-          onClick={onToggle}
-          title="Collapse panel"
-          className="p-2 mr-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
       </div>
 
       {/* ── PARTICIPANTS TAB ─────────────────────────────── */}
@@ -265,8 +264,7 @@ export default function RoomSidebar({
             <div className="px-3 pt-3">
               <button
                 onClick={muteAll}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
-              >
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-900/30 text-red-400 border border-red-700 rounded-lg text-sm font-medium hover:bg-red-900/50 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
@@ -276,10 +274,48 @@ export default function RoomSidebar({
             </div>
           )}
 
+          {/* Waiting room queue — host only */}
+          {isHost && pendingRequests.length > 0 && (
+            <div className="px-3 pt-3">
+              <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">
+                Waiting to join ({pendingRequests.length})
+              </p>
+              <div className="space-y-1.5">
+                {pendingRequests.map((req) => (
+                  <div
+                    key={req.userId}
+                    className="flex items-center justify-between bg-amber-900/20 border border-amber-700/40 rounded-lg px-2.5 py-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-amber-800/50 text-amber-300 flex items-center justify-center text-xs font-semibold shrink-0">
+                        {req.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm text-gray-200 truncate">{req.name}</span>
+                    </div>
+                    <div className="flex gap-1 shrink-0 ml-1">
+                      <button
+                        onClick={() => admitUser(req.userId, req.name)}
+                        className="px-2 py-0.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
+                      >
+                        Admit
+                      </button>
+                      <button
+                        onClick={() => rejectUser(req.userId, req.name)}
+                        className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* List */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5" ref={menuRef}>
             {sortedParticipants.length === 0 && (
-              <p className="text-center text-gray-400 text-sm mt-8">No participants yet</p>
+              <p className="text-center text-gray-500 text-sm mt-8">No participants yet</p>
             )}
             {sortedParticipants.map((p) => {
               const isMe = p.userId === userId;
@@ -289,21 +325,21 @@ export default function RoomSidebar({
               return (
                 <div
                   key={p.userId}
-                  className="group relative flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="group relative flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   {/* Avatar */}
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-900/60 text-blue-300 flex items-center justify-center text-sm font-semibold shrink-0">
                     {p.name.charAt(0).toUpperCase()}
                   </div>
 
                   {/* Name row */}
                   <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-gray-800 truncate">{p.name}</span>
+                    <span className="text-sm font-medium text-gray-100 truncate">{p.name}</span>
                     {p.role === 'host' && (
-                      <span className="text-xs text-blue-500 font-medium shrink-0">(Host)</span>
+                      <span className="text-xs text-blue-400 font-medium shrink-0">(Host)</span>
                     )}
                     {isMe && p.role !== 'host' && (
-                      <span className="text-[11px] text-gray-400 shrink-0">(you)</span>
+                        <span className="text-[11px] text-gray-500 shrink-0">(you)</span>
                     )}
                     {p.handRaised && (
                       <span className="text-base shrink-0" title="Hand raised">✋</span>
@@ -315,7 +351,7 @@ export default function RoomSidebar({
                     <div className="relative">
                       <button
                         onClick={() => setOpenMenuId(menuOpen ? null : p.userId)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 text-gray-500 transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-400 transition-all"
                         title="More options"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -327,11 +363,11 @@ export default function RoomSidebar({
 
                       {/* Dropdown */}
                       {menuOpen && (
-                        <div className="absolute right-0 top-7 z-50 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-sm">
+                        <div className="absolute right-0 top-7 z-50 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 text-sm">
                           {/* Mute */}
                           <button
                             onClick={() => muteUser(p.userId, p.name)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 text-gray-700 transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-700 text-gray-200 transition-colors"
                           >
                             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -344,19 +380,19 @@ export default function RoomSidebar({
                           {p.handRaised && (
                             <button
                               onClick={() => lowerHand(p.userId)}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 text-gray-700 transition-colors"
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-700 text-gray-200 transition-colors"
                             >
                               <span className="text-base leading-none">✋</span>
                               Lower hand
                             </button>
                           )}
 
-                          <div className="my-1 border-t border-gray-100" />
+                          <div className="my-1 border-t border-gray-700" />
 
                           {/* Kick */}
                           <button
                             onClick={() => kickUser(p.userId, p.name)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-red-50 text-red-600 transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-red-900/30 text-red-400 transition-colors"
                           >
                             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
@@ -380,20 +416,20 @@ export default function RoomSidebar({
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
             {messages.length === 0 && (
-              <p className="text-center text-gray-400 text-sm mt-8">No messages yet. Say hello!</p>
+              <p className="text-center text-gray-500 text-sm mt-8">No messages yet. Say hello!</p>
             )}
             {messages.map((msg, i) => {
               const isOwn = msg.userId === userId;
               return (
                 <div key={i} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                   {!isOwn && (
-                    <span className="text-xs text-gray-500 mb-1 ml-1">{msg.name}</span>
+                    <span className="text-xs text-gray-400 mb-1 ml-1">{msg.name}</span>
                   )}
                   <div
                     className={`max-w-52 px-3 py-2 rounded-2xl text-sm wrap-break-word ${
                       isOwn
                         ? 'bg-blue-600 text-white rounded-br-sm'
-                        : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+                        : 'bg-gray-700 text-gray-100 rounded-bl-sm'
                     }`}
                   >
                     {msg.message}
@@ -411,7 +447,7 @@ export default function RoomSidebar({
           </div>
 
           {/* Input */}
-          <div className="px-3 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="px-3 py-3 border-t border-gray-700 bg-gray-800/60">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -419,7 +455,7 @@ export default function RoomSidebar({
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="flex-1 px-3 py-2 rounded-full border border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
                 onClick={sendMessage}

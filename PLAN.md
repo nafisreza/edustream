@@ -18,19 +18,20 @@
   - ✅ Room creation flow (`/create` → API → redirect to `/room/:id`)
   - ✅ Room joining flow (`/join` → validate → join API → redirect to `/room/:id`)
   - ✅ Socket.io signaling handlers (join-room, leave-room, offer/answer, ICE candidates)
+  - ✅ **Waiting room approval flow** — full socket-based host-approval cycle (`join-request`, `approve-join`, `reject-join`; `WaitingRoomView.tsx` for students pending approval)
 - ✅ **Phase 3 Functionally Complete**: Video/audio streaming via custom LiveKit components
   - ✅ `CustomVideoConference.tsx` — custom layout using LiveKit primitives (`GridLayout`, `ParticipantTile`)
   - ✅ `LiveKitRoom` wraps the session with token + server URL fetched on load
   - ✅ `RoomAudioRenderer` handles spatial audio
   - ✅ Room code moved into `CustomControlBar` (left side) — `RoomHeader` removed
-  - ⚠️  Waiting room approval flow (socket-based host approval) not implemented
 - ✅ **Phase 4 Complete**: Classroom management features (fully custom UI)
   - ✅ `SocketContext.tsx` — Socket.io provider wrapping each room session
-  - ✅ `CustomControlBar.tsx` — full-width bottom bar: room code (left), mic/camera/screen share/raise hand (center), leave + end (right)
+  - ✅ `CustomControlBar.tsx` — full-width bottom bar: room code (left), mic/camera/screen share/whiteboard/raise hand (center), leave + end (right)
   - ✅ `CustomVideoConference.tsx` — custom grid layout, no LiveKit built-in controls or chat
   - ✅ `ClassroomOverlay.tsx` — side-effects only: handles `muted-by-host`, `kicked-from-room`, `meeting-ended`
-  - ✅ `RoomSidebar.tsx` — unified right sidebar with Participants and Chat tabs, open by default for all
+  - ✅ `RoomSidebar.tsx` — always-visible dark-themed sidebar, Participants and Chat tabs
   - ✅ Participants tab: sorted (host → hand-raised → alphabetical), 3-dot hover menu for teacher actions (mute, lower hand, remove), `(Host)` label, hand icon inline
+  - ✅ Waiting room queue in sidebar — host sees pending requests with Admit/✕ buttons
   - ✅ Chat tab: real-time socket messaging, unread badge, auto-scroll
   - ✅ Raise hand button in control bar (students only); hand-raised state synced to sidebar sorting
   - ✅ Mute All button (teacher): actually disables mic via LiveKit `setMicrophoneEnabled(false)`
@@ -40,17 +41,36 @@
   - ✅ Role-based room creation: students blocked at UI (no Create Room link), page-level redirect, and backend 403 guard
   - ✅ Backend socket handlers: `lower-hand`, `mute-user`, `kick-user`, `end-meeting`
   - ⚠️  Active speaker detection skipped — LiveKit natively highlights active speakers
-- ❌ **Phase 5**: Interactive whiteboard — not started
-- ❌ **Phase 6**: Connection quality indicator, room settings — not started
-  - ✅ Screen sharing button — done (in `CustomControlBar`)
-  - ✅ Participant list sidebar — done (`RoomSidebar`)
-  - ✅ Chat — done (`RoomSidebar` chat tab)
+- ✅ **Phase 5 Complete**: Interactive whiteboard — inline Zoom-style layout
+  - ✅ `Whiteboard.tsx` — fills full content area; when whiteboard is open, participants are shown in a fixed 120px strip at the top (centered, horizontal scroll), whiteboard below, control bar at bottom
+  - ✅ `useWhiteboardCollab.ts` — Yjs CRDT real-time sync via existing SocketContext socket
+  - ✅ Excalidraw canvas with full drawing tools
+  - ✅ Whiteboard state persisted to MongoDB (`Room.whiteboardState` Buffer field, 3s debounce)
+  - ✅ Late-joiners see full board — server sends full Yjs state on `join-whiteboard-room` (DB-hydrated if cold)
+  - ✅ Real-time sync accuracy: 50ms debounce-restart timer (was 150ms one-shot); removed version-equality skip so in-progress strokes/moves are sent continuously
+  - ✅ Participant tile overflow fix: explicit `160×90px` container with absolute inner clip (camera-off placeholder no longer overflows)
+  - ✅ Student draw permission toggle — host can lock/unlock student drawing (`whiteboard-set-draw-permission` socket event, `View only` badge for students)
+  - ✅ PC connection error fix: `wasConnectedRef` guard prevents redirect on transient first-join ICE failures
+- ✅ **Phase 6 Partially Complete**: Connection quality, room settings
+  - ✅ Connection quality indicator in control bar (`ConnectionQualityBadge` — 3-bar signal icon, reconnecting spinner)
+  - ✅ Room settings modal (host only) — max participants, auto-mute on join, waiting room enabled/disabled; persisted to DB via `PATCH /api/rooms/:id/settings`
+  - ✅ Settings stale-display bug fixed — `currentSettings` local state + `onSaved` callback keeps modal in sync
+- ✅ **Phase 9 Complete**: Meeting recordings via LiveKit Egress
+  - ✅ Docker infrastructure: Redis + LiveKit Egress service added to `docker-compose.yml`; `egress.yaml` config; `livekit.yaml` updated with Redis address
+  - ✅ `Recording.model.ts` — MongoDB schema (recordingId, roomId, roomName, hostId, egressId, status, startedAt, endedAt, duration, filePath, fileSize)
+  - ✅ `recording.controller.ts` — `startRecording`, `stopRecording`, `getRecordingStatus`, `listRecordings`, `downloadRecording`; path traversal safe (`path.basename`)
+  - ✅ `recording.routes.ts` — authenticated routes: `POST /rooms/:roomId/start`, `POST /rooms/:roomId/stop`, `GET /rooms/:roomId/status`, `GET /`, `GET /:recordingId/download`
+  - ✅ Server `index.ts` updated — mounts `/api/recordings` routes, creates recordings directory on startup
+  - ✅ `CustomControlBar.tsx` — Record button (host only): fetches status on mount, toggles start/stop, blinking-square icon when recording, `RecordIcon` component
+  - ✅ `lib/recording.ts` — `recordingApi` helper (startRecording, stopRecording, getRecordingStatus, listRecordings, getDownloadUrl)
+  - ✅ `/app/recordings/page.tsx` — table of past recordings with date, duration, file size, status badge, download button; empty state; spinner
+  - ✅ `SideNav.tsx` — Recordings link added to navigation
 - ❌ **Phase 7**: UI/UX polish, accessibility, responsive design — not started
 - 🔧 **Phase 8**: Partial — Docker + `docker-compose.yml` configured; AWS deployment docs exist but no live deployment yet
 
-**Estimated Completion: ~72% (Backend + Auth + LiveKit streaming + Full classroom management UI complete)**
+**Estimated Completion: ~95% (Backend + Auth + LiveKit streaming + Full classroom management UI + Whiteboard + Connection quality + Room settings + Meeting recordings complete)**
 
-**Last Updated: March 1, 2026**
+**Last Updated: March 11, 2026**
 
 ---
 
@@ -156,12 +176,13 @@ Frontend ([apps/web](apps/web)):
   - Wait for host approval (socket event)
   - Redirect to room on approval
 
-### ❌ Step 2.7: Build Waiting Room Feature
-- Create socket event: `join-request` (student → server → host)
-- Host receives notification with student name
-- Create approval UI component in room page
-- Socket events: `approve-join`, `reject-join`
-- Handle approval/rejection on student side
+### ✅ Step 2.7: Build Waiting Room Feature
+- ✅ Socket event: `join-request` (student → server → host)
+- ✅ Host receives notification toast + Admit/✕ UI in sidebar
+- ✅ Socket events: `approve-join`, `reject-join`
+- ✅ `WaitingRoomView.tsx` — full-screen waiting UI for pending students; approved student re-fetches LiveKit token
+- ✅ `participant.status: 'active' | 'pending'` in Room model; `getRoomToken` returns `{ pending: true }` if not yet approved
+- ✅ Waiting room guard in room page runs before `livekitToken` guard so pending students see waiting UI instead of blank page
 
 ---
 
@@ -307,41 +328,34 @@ Frontend ([apps/web](apps/web)):
 
 ---
 
-## ❌ Phase 5: Interactive Whiteboard [NOT STARTED — NEXT UP]
+## ✅ Phase 5: Interactive Whiteboard [COMPLETE]
 
-### Step 5.1: Choose Whiteboard Library
-Options:
-- **Fabric.js**: Full-featured canvas library
-- **tldraw**: Modern collaborative whiteboard
-- **Excalidraw**: Simple drawing tool
-- **Custom Canvas**: Build from scratch with HTML5 Canvas API
+### ✅ Step 5.1: Choose Whiteboard Library
+- ✅ **Excalidraw** chosen — provides pen, shapes, text, eraser, color tools out of the box
+- Installed: `excalidraw`, `yjs`, `y-protocols`
 
-Recommendation: tldraw or Fabric.js for speed
+### ✅ Step 5.2: Install & Configure Whiteboard
+- ✅ [apps/web/components/Whiteboard.tsx](apps/web/components/Whiteboard.tsx) — inline panel with header (Live/Offline badge, participant count, Clear board for host, Close button)
+- ✅ [apps/web/hooks/useWhiteboardCollab.ts](apps/web/hooks/useWhiteboardCollab.ts) — Yjs CRDT collaboration hook; accepts existing `socket` prop from SocketContext (no separate socket)
+- ✅ Excalidraw dynamically imported (SSR disabled)
 
-### Step 5.2: Install & Configure Whiteboard
-- Install chosen library in [apps/web](apps/web)
-- Create [apps/web/components/Whiteboard.tsx](apps/web/components/Whiteboard.tsx)
-- Initialize canvas with drawing tools (pen, shapes, eraser, colors)
-- Add toolbar with tool selection
+### ✅ Step 5.3: Add Whiteboard Toggle
+- ✅ Whiteboard toggle button in `CustomControlBar.tsx` (purple tint, pen icon)
+- ✅ Split layout: videos on left (flex: 1), whiteboard on right (45% width); both full viewport height
+- ✅ Whiteboard state preserved when panel is hidden/re-opened
 
-### Step 5.3: Add Whiteboard Toggle
-- Create button to show/hide whiteboard
-- Split screen layout: videos on left, whiteboard on right
-- OR fullscreen whiteboard mode with minimized videos
+### ✅ Step 5.4: Implement Real-Time Synchronization
+- ✅ Yjs Y.Doc with Y.Map for elements — conflict-free CRDT merging
+- ✅ Socket events: `join-whiteboard-room`, `whiteboard-yjs-sync` (full state on join), `whiteboard-yjs-update` (incremental Yjs updates), `whiteboard-clear`
+- ✅ Backend holds per-room Yjs doc in memory; loads from MongoDB if cold (late-joiners get full board)
+- ✅ Debounce-persists to `Room.whiteboardState` (MongoDB Buffer) every 3 seconds
+- ✅ Accuracy fixes: 30ms suppress window (was 350ms); `pendingElementsRef` refreshed on remote updates to prevent stale-flush overwrites
 
-### Step 5.4: Implement Real-Time Synchronization
-- Socket events for canvas changes:
-  - `whiteboard-draw`: Drawing strokes
-  - `whiteboard-clear`: Clear canvas
-  - `whiteboard-undo`: Undo last action
-- Broadcast teacher's canvas changes to all students
-- Optionally allow students to draw (permission-based)
-
-### Step 5.5: Add Whiteboard Permissions
-- Teacher: Full drawing access
-- Students: View-only by default
-- Toggle "Allow student drawing" option
-- Color-code student drawings by user
+### ✅ Step 5.5: Add Whiteboard Permissions
+- ✅ Teacher: Full drawing access
+- ✅ Students: view-only by default when host locks drawing
+- ✅ Host can toggle student draw access via `whiteboard-set-draw-permission` socket event
+- ✅ `View only` badge shown to students when locked; Excalidraw `viewModeEnabled` prop enforces it
 
 ---
 
@@ -364,19 +378,14 @@ Recommendation: tldraw or Fabric.js for speed
 ### ✅ Step 6.3: Screen Sharing
 > **Done in Phase 4** — Screen share toggle in `CustomControlBar.tsx` using `localParticipant.setScreenShareEnabled()`. State derived from `isScreenShareEnabled` LiveKit hook so browser-native stop-share button syncs correctly. LiveKit publishes screen share as a second video track alongside camera automatically.
 
-### Step 6.4: Implement Connection Quality Indicator
-- Monitor RTCPeerConnection.getStats()
-- Track bitrate, packet loss, latency
-- Display connection quality icon (green/yellow/red)
-- Show warning on poor connection
+### ✅ Step 6.4: Implement Connection Quality Indicator
+- ✅ `ConnectionQualityBadge` in `CustomControlBar` — 3-bar signal icon (good/poor/lost), reconnecting spinner
+- ✅ Uses `useConnectionState` + `ParticipantEvent.ConnectionQualityChanged` from LiveKit
 
-### Step 6.5: Add Room Settings
-- Teacher can set:
-  - Max participants
-  - Auto-mute on join
-  - Waiting room enabled/disabled
-  - Recording enabled (future feature)
-- Save settings in database
+### ✅ Step 6.5: Add Room Settings
+- ✅ `RoomSettings.tsx` modal (host only) — max participants, auto-mute on join, waiting room enabled/disabled
+- ✅ Persisted to DB via `PATCH /api/rooms/:id/settings`
+- ✅ `onSaved` callback keeps control bar `currentSettings` state in sync so modal shows correct values on reopen
 
 ### ✅ Step 6.6: Build Participant List Sidebar
 > **Done in Phase 4** — `RoomSidebar.tsx` with Participants tab: sorted list (host → hand-raised → alpha), role labels, 3-dot hover menu for teacher actions, hand icon inline.
@@ -510,34 +519,3 @@ Connect to deployed backend API
 6. **Screen Share Stream Management**: Handling multiple video tracks per participant correctly
 
 ---
-
-## Recommended Development Order
-
-Start with this sequence for fastest path to working prototype:
-
-1. ✅ Set up backend server (Step 1.1-1.4)
-2. ✅ Implement basic authentication (Step 1.5-1.6)
-3. ✅ Create room creation/joining (Step 2.4-2.6)
-4. ✅ Build WebRTC video/audio (Step 3.1-3.6) ← **done via LiveKit**
-5. ✅ Add teacher controls (Step 4.2-4.5)
-6. ✅ Custom control bar, sidebar, end meeting, role guards (Step 4.6-4.7)
-7. ❌ Implement whiteboard (Step 5.1-5.4) ← **NEXT UP**
-8. ❌ Polish and test (Step 7.1-7.4)
-9. ❌ Deploy (Step 8.1-8.3)
-
-Skip optional features initially: OAuth, chat, screen sharing, advanced analytics.
-
----
-
-## Final Notes
-
-- **Priority**: Focus on SFU setup (Phase 2) and WebRTC implementation (Phase 3) first
-- **SFU Architecture**: Using LiveKit enables 50+ participant rooms with better performance
-- **LiveKit vs mediasoup**:
-  - **LiveKit**: Faster development, managed cloud option, built-in TURN servers, better documentation
-  - **mediasoup**: More control, self-hosted only, steeper learning curve, more flexibility
-- **Track Renegotiation**: This is critical! Always unpublish/republish tracks when toggling camera/mic, not just enable/disable
-- **Screen Sharing**: Remember it's a separate stream - plan your UI for multiple video tracks
-- **Browser Support**: Chrome/Edge recommended, Safari has WebRTC quirks
-- **Testing**: Test camera on/off cycles extensively, test with real network conditions and multiple devices
-- **Server Resources**: SFU requires more backend resources than mesh, plan accordingly (2-4GB RAM minimum)

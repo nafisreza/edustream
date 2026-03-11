@@ -48,6 +48,32 @@ const activeRooms = new Map<string, RoomState>();
 const whiteboardRooms = new Map<string, WhiteboardState>();
 const whiteboardSnapshots = new Map<string, string>();
 const whiteboardParticipants = new Map<string, Map<string, WhiteboardParticipant>>();
+// Debounce timers for persisting Yjs state to DB (one timer per roomId)
+const whiteboardPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+// Per-room whiteboard draw permission: true = students can draw (default), false = view-only for students
+const whiteboardDrawPermissions = new Map<string, boolean>();
+// Waiting room: roomId -> Map<userId, socketId> for participants pending host approval
+const waitingRoomSockets = new Map<string, Map<string, string>>();
+
+const persistWhiteboardState = (roomId: string): void => {
+  const existing = whiteboardPersistTimers.get(roomId);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(async () => {
+    whiteboardPersistTimers.delete(roomId);
+    const state = whiteboardRooms.get(roomId);
+    if (!state) return;
+    try {
+      const encoded = Buffer.from(Y.encodeStateAsUpdate(state.doc));
+      await Room.findOneAndUpdate({ roomId }, { whiteboardState: encoded });
+      console.log(`💾 Whiteboard state persisted for room ${roomId}`);
+    } catch (err) {
+      console.error(`Failed to persist whiteboard state for room ${roomId}:`, err);
+    }
+  }, 3000);
+
+  whiteboardPersistTimers.set(roomId, timer);
+};
 
 const getOrCreateWhiteboardState = (roomId: string): WhiteboardState => {
   const existing = whiteboardRooms.get(roomId);
@@ -88,7 +114,7 @@ const emitWhiteboardPresence = (io: SocketIOServer, roomId: string) => {
     ? Array.from(roomParticipants.values())
     : [];
 
-  io.to(roomId).emit('whiteboard-presence-state', {
+  io.to(`whiteboard:${roomId}`).emit('whiteboard-presence-state', {
     roomId,
     participants,
   });
@@ -123,7 +149,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
     console.log(`✅ Client connected: ${socket.id}`);
 
     // Join room
-    socket.on('join-room', ({ roomId, userId, name, role }) => {
+    socket.on('join-room', async ({ roomId, userId, name, role }) => {
       console.log(`📥 Join room request: ${name} → ${roomId}`);
 
       // Join socket.io room
@@ -162,13 +188,28 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       socket.emit('room-participants', participants);
 
       console.log(`${name} joined room ${roomId}. Total participants: ${room.participants.size}`);
+
+      // Auto-mute new participants if the room's autoMuteOnJoin setting is enabled.
+      if (role === 'participant') {
+        try {
+          const roomDoc = await Room.findOne({ roomId }, 'settings').lean();
+          if (roomDoc?.settings?.autoMuteOnJoin) {
+            socket.emit('muted-by-host');
+          }
+        } catch { /* ignore — don't block the join on a DB error */ }
+      }
     });
 
     // Join whiteboard room (separate from room participant tracking)
-    socket.on('join-whiteboard-room', ({ roomId, color }) => {
+    socket.on('join-whiteboard-room', async ({ roomId, color }) => {
       // Derive identity from the authenticated socket; never trust client-supplied userId/name.
-      const userId = socket.data.userId as string;
-      const name = socket.data.name as string;
+      const userId = socket.data.userId as string | undefined;
+      const name = socket.data.name as string | undefined;
+
+      if (!userId || !name) {
+        socket.emit('whiteboard-error', { message: 'Authentication data missing' });
+        return;
+      }
 
       // Validate the user is an active participant of this room.
       const room = activeRooms.get(roomId);
@@ -177,8 +218,8 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         return;
       }
 
-      socket.join(roomId);
-      console.log(`🧩 Whiteboard join: socket ${socket.id} -> ${roomId}`);
+      socket.join(`whiteboard:${roomId}`);
+      console.log(`🧩 Whiteboard join: socket ${socket.id} -> whiteboard:${roomId}`);
 
       if (!whiteboardParticipants.has(roomId)) {
         whiteboardParticipants.set(roomId, new Map());
@@ -190,8 +231,26 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         color: color || '#4f46e5',
       });
 
-      const snapshot = whiteboardSnapshots.get(roomId) ?? JSON.stringify([]);
-      socket.emit('whiteboard-scene-state', { roomId, elementsJson: snapshot });
+      // Send the full Yjs state to the new joiner so they see all existing
+      // drawings immediately, hydrating from DB if needed.
+      const wbState = getOrCreateWhiteboardState(roomId);
+      const isDocEmpty = wbState.doc.getMap('elements').size === 0;
+      if (isDocEmpty) {
+        try {
+          const room = await Room.findOne({ roomId }, 'whiteboardState').lean();
+          if (room?.whiteboardState && room.whiteboardState.length > 0) {
+            Y.applyUpdate(wbState.doc, new Uint8Array(room.whiteboardState));
+            console.log(`📚 Loaded whiteboard state from DB on join for room ${roomId}`);
+          }
+        } catch (err) {
+          console.error(`Failed to load whiteboard state for room ${roomId}:`, err);
+        }
+      }
+      const fullUpdate = Y.encodeStateAsUpdate(wbState.doc);
+      socket.emit('whiteboard-yjs-sync', { roomId, update: Array.from(fullUpdate) });
+
+      // Inform the new joiner of the current draw permission for this room.
+      socket.emit('whiteboard-draw-permission', { allowed: whiteboardDrawPermissions.get(roomId) ?? true });
       emitWhiteboardPresence(io, roomId);
     });
 
@@ -203,7 +262,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           whiteboardState.socketToClientId.delete(socket.id);
           removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
           const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
-          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+          socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
         }
       }
 
@@ -215,13 +274,95 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         }
       }
 
-      socket.leave(roomId);
+      socket.leave(`whiteboard:${roomId}`);
       emitWhiteboardPresence(io, roomId);
     });
 
     // Leave room
     socket.on('leave-room', ({ roomId, userId }) => {
       handleLeaveRoom(socket, roomId, userId);
+    });
+
+    // ── Waiting room ────────────────────────────────────────────────
+
+    // Student connects while pending approval; server notifies host.
+    socket.on('waiting-room-request', async ({ roomId }) => {
+      const userId = socket.data.userId as string | undefined;
+      const name = socket.data.name as string | undefined;
+      if (!userId || !roomId) return;
+
+      try {
+        const roomDoc = await Room.findOne({ roomId, isActive: true }, 'participants').lean();
+        if (!roomDoc) { socket.emit('join-rejected'); return; }
+
+        const participant = (roomDoc.participants as any[]).find((p: any) => p.userId === userId);
+        if (!participant || participant.status !== 'pending') {
+          socket.emit('join-rejected');
+          return;
+        }
+
+        if (!waitingRoomSockets.has(roomId)) waitingRoomSockets.set(roomId, new Map());
+        waitingRoomSockets.get(roomId)!.set(userId, socket.id);
+
+        io.to(roomId).emit('join-request', { userId, name: name ?? participant.name });
+        console.log(`[WR] ${name ?? userId} waiting in room ${roomId}`);
+      } catch (err) {
+        console.error('waiting-room-request error:', err);
+        socket.emit('join-rejected');
+      }
+    });
+
+    // Host approves a waiting participant.
+    socket.on('approve-join', async ({ roomId, userId: targetUserId }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      if (!hostUserId) return;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom) return;
+      const hostInfo = activeRoom.participants.get(hostUserId);
+      if (!hostInfo || hostInfo.role !== 'host') return;
+
+      try {
+        await Room.findOneAndUpdate(
+          { roomId, 'participants.userId': targetUserId },
+          { $set: { 'participants.$.status': 'active' } }
+        );
+      } catch (err) {
+        console.error('approve-join DB error:', err);
+        return;
+      }
+
+      const waitingSocketId = waitingRoomSockets.get(roomId)?.get(targetUserId);
+      if (waitingSocketId) {
+        io.to(waitingSocketId).emit('join-approved');
+        waitingRoomSockets.get(roomId)?.delete(targetUserId);
+      }
+      console.log(`[WR] Approved ${targetUserId} into room ${roomId}`);
+    });
+
+    // Host rejects a waiting participant.
+    socket.on('reject-join', async ({ roomId, userId: targetUserId }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      if (!hostUserId) return;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom) return;
+      const hostInfo = activeRoom.participants.get(hostUserId);
+      if (!hostInfo || hostInfo.role !== 'host') return;
+
+      try {
+        await Room.findOneAndUpdate(
+          { roomId },
+          { $pull: { participants: { userId: targetUserId } } } as any
+        );
+      } catch (err) {
+        console.error('reject-join DB error:', err);
+      }
+
+      const waitingSocketId = waitingRoomSockets.get(roomId)?.get(targetUserId);
+      if (waitingSocketId) {
+        io.to(waitingSocketId).emit('join-rejected');
+        waitingRoomSockets.get(roomId)?.delete(targetUserId);
+      }
+      console.log(`[WR] Rejected ${targetUserId} from room ${roomId}`);
     });
 
     // WebRTC signaling events
@@ -324,17 +465,36 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       }
       whiteboardSnapshots.delete(roomId);
       whiteboardParticipants.delete(roomId);
+      whiteboardDrawPermissions.delete(roomId);
+      // Reject any students still in the waiting room so they aren't stuck.
+      const endWaiting = waitingRoomSockets.get(roomId);
+      if (endWaiting) {
+        endWaiting.forEach((wSocketId) => io.to(wSocketId).emit('join-rejected'));
+        waitingRoomSockets.delete(roomId);
+      }
 
       console.log(`🔴 Meeting ${roomId} ended by host`);
     });
 
     // Whiteboard events
     socket.on('whiteboard-draw', ({ roomId, drawData }) => {
-      socket.to(roomId).emit('whiteboard-draw', drawData);
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-draw', drawData);
     });
 
     socket.on('whiteboard-clear', ({ roomId }) => {
-      socket.to(roomId).emit('whiteboard-clear');
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-clear');
+    });
+
+    // Host can toggle whether students are allowed to draw on the whiteboard.
+    socket.on('whiteboard-set-draw-permission', ({ roomId, allowed }) => {
+      const hostUserId = socket.data.userId as string | undefined;
+      const activeRoom = activeRooms.get(roomId);
+      if (!activeRoom || !hostUserId) return;
+      const participant = activeRoom.participants.get(hostUserId);
+      if (!participant || participant.role !== 'host') return;
+      whiteboardDrawPermissions.set(roomId, Boolean(allowed));
+      io.to(`whiteboard:${roomId}`).emit('whiteboard-draw-permission', { allowed: Boolean(allowed) });
+      console.log(`🖊️  Whiteboard draw ${allowed ? 'unlocked' : 'locked'} for room ${roomId}`);
     });
 
     socket.on('whiteboard-scene-update', ({ roomId, elementsJson }) => {
@@ -349,17 +509,29 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
       }
 
       whiteboardSnapshots.set(roomId, elementsJson);
-      socket.to(roomId).emit('whiteboard-scene-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-scene-update', {
         roomId,
         elementsJson,
       });
     });
 
-    // CRDT whiteboard sync (Yjs)
-    socket.on('whiteboard-yjs-sync', ({ roomId }) => {
-      const whiteboardState = getOrCreateWhiteboardState(roomId);
-      const fullUpdate = Y.encodeStateAsUpdate(whiteboardState.doc);
+    // CRDT whiteboard sync (Yjs) — re-send full state on demand (e.g. reconnect).
+    socket.on('whiteboard-yjs-sync', async ({ roomId }) => {
+      const state = getOrCreateWhiteboardState(roomId);
 
+      // If the in-memory doc is empty, try to hydrate from DB.
+      if (state.doc.getMap('elements').size === 0) {
+        try {
+          const room = await Room.findOne({ roomId }, 'whiteboardState').lean();
+          if (room?.whiteboardState && room.whiteboardState.length > 0) {
+            Y.applyUpdate(state.doc, new Uint8Array(room.whiteboardState));
+          }
+        } catch (err) {
+          console.error(`Failed to load whiteboard state for room ${roomId}:`, err);
+        }
+      }
+
+      const fullUpdate = Y.encodeStateAsUpdate(state.doc);
       socket.emit('whiteboard-yjs-sync', {
         roomId,
         update: Array.from(fullUpdate),
@@ -374,10 +546,13 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
 
       const whiteboardState = getOrCreateWhiteboardState(roomId);
       Y.applyUpdate(whiteboardState.doc, updateBytes, socket.id);
-      socket.to(roomId).emit('whiteboard-yjs-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-yjs-update', {
         roomId,
         update: Array.from(updateBytes),
       });
+
+      // Debounce-persist the updated Yjs state to MongoDB.
+      persistWhiteboardState(roomId);
     });
 
     socket.on('whiteboard-awareness-update', ({ roomId, update, userId }) => {
@@ -397,7 +572,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
         }
       }
 
-      socket.to(roomId).emit('whiteboard-awareness-update', {
+      socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', {
         roomId,
         update: Array.from(updateBytes),
       });
@@ -424,7 +599,7 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           whiteboardState.socketToClientId.delete(socket.id);
           removeAwarenessStates(whiteboardState.awareness, [clientId], socket.id);
           const removeUpdate = encodeAwarenessUpdate(whiteboardState.awareness, [clientId]);
-          socket.to(roomId).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
+          socket.to(`whiteboard:${roomId}`).emit('whiteboard-awareness-update', { roomId, update: Array.from(removeUpdate) });
         }
       });
 
@@ -435,6 +610,18 @@ export const initializeSocketHandlers = (io: SocketIOServer): void => {
           }
           emitWhiteboardPresence(io, roomId);
         }
+      });
+
+      // If a waiting student disconnects, remove them and notify the host.
+      waitingRoomSockets.forEach((waitingMap, wRoomId) => {
+        for (const [wUserId, wSocketId] of waitingMap.entries()) {
+          if (wSocketId === socket.id) {
+            waitingMap.delete(wUserId);
+            io.to(wRoomId).emit('waiting-student-left', { userId: wUserId });
+            break;
+          }
+        }
+        if (waitingMap.size === 0) waitingRoomSockets.delete(wRoomId);
       });
       
       // Find and remove user from all rooms
@@ -474,6 +661,8 @@ const handleLeaveRoom = (socket: Socket, roomId: string, userId: string): void =
         }
         whiteboardSnapshots.delete(roomId);
         whiteboardParticipants.delete(roomId);
+        whiteboardDrawPermissions.delete(roomId);
+        waitingRoomSockets.delete(roomId);
         console.log(`🗑️  Room ${roomId} removed (empty)`);
       }
     }
