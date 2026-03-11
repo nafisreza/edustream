@@ -11,6 +11,7 @@ import ClassroomOverlay from "@/components/ClassroomOverlay";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import RoomSidebar from "@/components/RoomSidebar";
 import WaitingRoomView from "@/components/WaitingRoomView";
+import PreJoinPreview from "@/components/PreJoinPreview";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { VideoPresets } from "livekit-client";
 import "@livekit/components-styles/index.css";
@@ -32,6 +33,11 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
   const [waitingRoom, setWaitingRoom] = useState(false);
+  const [shouldConnect, setShouldConnect] = useState(false);
+  const [joinPreferences, setJoinPreferences] = useState({
+    audioEnabled: true,
+    videoEnabled: true,
+  });
   // Track whether a LiveKit connection was ever successfully established.
   // Prevents transient first-join PC errors from immediately redirecting away.
   const wasConnectedRef = useRef(false);
@@ -119,8 +125,26 @@ export default function RoomPage({ params }: RoomPageProps) {
     );
   }
 
-  // Waiting for host approval — must be checked before the livekitToken guard because
-  // the token is intentionally empty while the student is pending.
+  if (!user || !roomData) return null;
+
+  if (!shouldConnect) {
+    return (
+      <PreJoinPreview
+        roomId={roomId}
+        userName={user.name}
+        defaultAudioEnabled={!(roomData.settings.autoMuteOnJoin && !isHost)}
+        defaultVideoEnabled={true}
+        onJoin={(preferences) => {
+          setJoinPreferences(preferences);
+          setShouldConnect(true);
+        }}
+        onCancel={() => router.push('/')}
+      />
+    );
+  }
+
+  // Waiting for host approval should happen only after the participant confirms
+  // joining from the preview screen.
   if (waitingRoom && user && roomId) {
     return (
       <WaitingRoomView
@@ -133,7 +157,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     );
   }
 
-  if (!user || !roomData || !livekitToken) return null;
+  if (!livekitToken) return null;
 
   return (
     <SocketProvider
@@ -146,9 +170,9 @@ export default function RoomPage({ params }: RoomPageProps) {
         <LiveKitRoom
           token={livekitToken}
           serverUrl={livekitUrl}
-          connect={true}
-          video={{ resolution: VideoPresets.h720.resolution }}
-          audio={true}
+          connect={shouldConnect}
+          video={joinPreferences.videoEnabled ? { resolution: VideoPresets.h720.resolution } : false}
+          audio={joinPreferences.audioEnabled}
           onConnected={() => { wasConnectedRef.current = true; }}
           onDisconnected={handleDisconnect}
           onError={handleError}
