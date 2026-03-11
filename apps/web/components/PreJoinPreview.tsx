@@ -106,8 +106,8 @@ export default function PreJoinPreview({
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Navbar />
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-24 pb-10 md:flex-row md:gap-10">
-        <div className="w-full max-w-xl">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-24 pb-10 md:flex-row md:gap-10">
+        <div className="w-full max-w-3xl">
           <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-[#202124] shadow-sm">
             {videoEnabled ? (
               <video ref={videoRef} muted playsInline className="aspect-video w-full object-cover" />
